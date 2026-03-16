@@ -188,6 +188,12 @@ struct EmptyStateView: View {
                 .font(.system(size: 16, weight: .medium, design: .monospaced))
                 .foregroundStyle(theme.emptyStateText)
 
+            Link(destination: URL(string: "https://github.com/katagaki/Reeled")!) {
+                Label("katagaki/Reeled", systemImage: "chevron.left.forwardslash.chevron.right")
+                    .font(.system(size: 13, weight: .medium, design: .monospaced))
+                    .foregroundStyle(theme.emptyStateText.opacity(0.6))
+            }
+
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
