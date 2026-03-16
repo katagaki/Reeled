@@ -150,6 +150,7 @@ struct ContentView: View {
                 VintageSlider(label: "NOISE LINES", value: $settings.noiseLines, range: 0...10)
                 VintageSlider(label: "DISPLACEMENT", value: $settings.displacement, range: 0...8)
                 VintageSlider(label: "GRAIN", value: $settings.grain, range: 0...0.5)
+                VintageSlider(label: "MICRO DISTORTION", value: $settings.microDistortion, range: 0...1.0)
             }
 
             settingsGroup("ATMOSPHERE") {
@@ -317,11 +318,21 @@ struct ContentView: View {
     private func printSettings(_ snap: VHSFilterSettings.Snapshot) {
         #if DEBUG
         debugPrint("""
-        [VHS Settings] chromatic=\(snap.chromaticAberration) sat=\(snap.saturation) \
-        bright=\(snap.brightness) contrast=\(snap.contrast) warmth=\(snap.warmth) \
-        soft=\(snap.softness) sharp=\(snap.sharpness) scanlines=\(snap.scanlineOpacity) \
-        noise=\(snap.noiseLines) disp=\(snap.displacement) grain=\(snap.grain) \
-        vignette=\(snap.vignette) bloom=\(snap.bloom)
+        [VHS Settings] \
+        chromatic=\(snap.chromaticAberration) \
+        sat=\(snap.saturation) \
+        bright=\(snap.brightness) \
+        contrast=\(snap.contrast) \
+        warmth=\(snap.warmth) \
+        soft=\(snap.softness) \
+        sharp=\(snap.sharpness) \
+        scanlines=\(snap.scanlineOpacity) \
+        noise=\(snap.noiseLines) \
+        disp=\(snap.displacement) \
+        grain=\(snap.grain) \
+        microDistortion=\(snap.microDistortion) \
+        vignette=\(snap.vignette) \
+        bloom=\(snap.bloom)
         """)
         #endif
     }

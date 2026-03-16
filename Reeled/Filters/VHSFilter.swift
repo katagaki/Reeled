@@ -128,6 +128,10 @@ struct VHSFilter: Sendable {
             }
         }
 
+        if settings.microDistortion > 0 {
+            result = applyMicroDistortion(to: result, extent: extent, scale: scale, seed: seed, intensity: settings.microDistortion)
+        }
+
         if settings.vignette > 0 {
             let vignetteRadius = max(1.5, scale * 1.5)
             result = result.applyingFilter("CIVignette", parameters: [
@@ -424,6 +428,37 @@ struct VHSFilter: Sendable {
             .cropped(to: extent)
 
         return combined
+    }
+
+    nonisolated private static func applyMicroDistortion(to image: CIImage, extent: CGRect, scale: CGFloat, seed: UInt64, intensity: Double) -> CIImage {
+        // Grain-level horizontal distortion — individual noise grains each
+        // shift nearby pixels horizontally, giving a gritty, degraded look.
+        guard let noise = CIFilter(name: "CIRandomGenerator")?.outputImage else { return image }
+
+        let greyNoise = noise.cropped(to: extent)
+            .applyingFilter("CIColorControls", parameters: [
+                kCIInputSaturationKey: 0.0,
+                kCIInputBrightnessKey: -0.5,
+                kCIInputContrastKey: 1.5
+            ])
+
+        // Slight horizontal smear so each grain stretches a few pixels wide,
+        // biasing the displacement horizontally without merging entire rows.
+        let hBlurRadius = max(2.0, 4.0 * scale)
+        let smearedNoise = greyNoise.applyingFilter("CIMotionBlur", parameters: [
+            kCIInputRadiusKey: hBlurRadius,
+            kCIInputAngleKey: 0.0
+        ]).cropped(to: extent)
+
+        // intensity 1.0 → ~6px shift at 640px wide
+        let displacementScale = CGFloat(intensity) * 6.0 * max(1.0, scale)
+
+        let distorted = image.applyingFilter("CIDisplacementDistortion", parameters: [
+            "inputDisplacementImage": smearedNoise,
+            kCIInputScaleKey: displacementScale
+        ]).cropped(to: extent)
+
+        return distorted
     }
 
     nonisolated private static func generateDateStamp(size: CGSize, seed: UInt64) -> CIImage? {

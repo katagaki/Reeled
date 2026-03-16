@@ -141,6 +141,9 @@
     "Insert this side into recorder" : {
       "shouldTranslate" : false
     },
+    "katagaki/Reeled" : {
+      "shouldTranslate" : false
+    },
     "OK" : {
       "shouldTranslate" : false
     },

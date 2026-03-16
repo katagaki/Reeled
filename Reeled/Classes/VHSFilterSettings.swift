@@ -4,7 +4,7 @@ import Observation
 @Observable
 final class VHSFilterSettings: @unchecked Sendable {
     var chromaticAberration: Double = 0.0 { didSet { version += 1 } }
-    var saturation: Double = 0.42 { didSet { version += 1 } }
+    var saturation: Double = 0.68 { didSet { version += 1 } }
     var brightness: Double = -0.045 { didSet { version += 1 } }
     var contrast: Double = 1.15 { didSet { version += 1 } }
     var warmth: Double = 5620 { didSet { version += 1 } }
@@ -12,7 +12,8 @@ final class VHSFilterSettings: @unchecked Sendable {
     var scanlineOpacity: Double = 0.17 { didSet { version += 1 } }
     var noiseLines: Double = 0.85 { didSet { version += 1 } }
     var displacement: Double = 6.6 { didSet { version += 1 } }
-    var grain: Double = 0.4 { didSet { version += 1 } }
+    var grain: Double = 0.1 { didSet { version += 1 } }
+    var microDistortion: Double = 0.6 { didSet { version += 1 } }
     var vignette: Double = 1.0 { didSet { version += 1 } }
     var bloom: Double = 0.03 { didSet { version += 1 } }
     var sharpness: Double = 1.6 { didSet { version += 1 } }
@@ -23,15 +24,16 @@ final class VHSFilterSettings: @unchecked Sendable {
 
     func resetToDefaults() {
         chromaticAberration = 0.0
-        saturation = 0.42
+        saturation = 0.68
         brightness = -0.045
         contrast = 1.15
         warmth = 5620
         softness = 1.1
-        scanlineOpacity = 0.17
+        scanlineOpacity = 0.05
         noiseLines = 0.85
         displacement = 6.6
-        grain = 0.4
+        grain = 0.1
+        microDistortion = 0.6
         vignette = 1.0
         bloom = 0.03
         sharpness = 1.6
@@ -49,6 +51,7 @@ final class VHSFilterSettings: @unchecked Sendable {
             "noiseLines": noiseLines,
             "displacement": displacement,
             "grain": grain,
+            "microDistortion": microDistortion,
             "vignette": vignette,
             "bloom": bloom,
             "sharpness": sharpness
@@ -68,6 +71,7 @@ final class VHSFilterSettings: @unchecked Sendable {
         if let v = dict["noiseLines"] { noiseLines = v }
         if let v = dict["displacement"] { displacement = v }
         if let v = dict["grain"] { grain = v }
+        if let v = dict["microDistortion"] { microDistortion = v }
         if let v = dict["vignette"] { vignette = v }
         if let v = dict["bloom"] { bloom = v }
         if let v = dict["sharpness"] { sharpness = v }
@@ -85,6 +89,7 @@ final class VHSFilterSettings: @unchecked Sendable {
             noiseLines: noiseLines,
             displacement: displacement,
             grain: grain,
+            microDistortion: microDistortion,
             vignette: vignette,
             bloom: bloom,
             sharpness: sharpness
@@ -102,6 +107,7 @@ final class VHSFilterSettings: @unchecked Sendable {
         let noiseLines: Double
         let displacement: Double
         let grain: Double
+        let microDistortion: Double
         let vignette: Double
         let bloom: Double
         let sharpness: Double
