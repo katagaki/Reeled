@@ -423,8 +423,7 @@ struct Theme {
     // MARK: - ProcessedImageView
 
     var processedImageBackground: Color {
-        isLight ? Color(red: 0.85, green: 0.82, blue: 0.75)
-                : Color(red: 0.02, green: 0.02, blue: 0.03)
+        Color(red: 0.02, green: 0.02, blue: 0.03)
     }
     var processedImageOverlayTop: Color {
         isLight ? Color.white.opacity(0.12)
