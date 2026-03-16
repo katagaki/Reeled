@@ -393,17 +393,17 @@ struct VHSFilter: Sendable {
     nonisolated private static func generateDateStamp(size: CGSize, seed: UInt64) -> CIImage? {
         var rng = SeededRNG(seed: seed)
 
-        let heiseiYear = Int.random(in: 1...31, using: &rng)
+        let year = Int.random(in: 1...31, using: &rng)
         let month = Int.random(in: 1...12, using: &rng)
         let day = Int.random(in: 1...28, using: &rng)
         let hour = Int.random(in: 0...23, using: &rng)
         let minute = Int.random(in: 0...59, using: &rng)
 
         let formats = [
-            String(format: "%d.%02d.%02d  %02d:%02d", 1988 + heiseiYear, month, day, hour, minute),
-            String(format: "H%d.%d.%d  %d:%02d", heiseiYear, month, day, hour, minute),
-            String(format: "%d/%02d/%02d  %02d:%02d", 1988 + heiseiYear, month, day, hour, minute),
-            String(format: "'%02d %02d.%02d  %02d:%02d", (1988 + heiseiYear) % 100, month, day, hour, minute)
+            String(format: "%d.%02d.%02d  %02d:%02d", 1988 + year, month, day, hour, minute),
+            String(format: "H%d.%d.%d  %d:%02d", year, month, day, hour, minute),
+            String(format: "%d/%02d/%02d  %02d:%02d", 1988 + year, month, day, hour, minute),
+            String(format: "'%02d %02d.%02d  %02d:%02d", (1988 + year) % 100, month, day, hour, minute)
         ]
         let dateString = formats[Int.random(in: 0..<formats.count, using: &rng)]
 
