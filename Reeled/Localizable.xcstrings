@@ -60,7 +60,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Insert"
+            "value" : "INSERT"
           }
         },
         "ja" : {
@@ -76,7 +76,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Reset"
+            "value" : "RESET"
           }
         },
         "ja" : {
@@ -92,7 +92,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rewind"
+            "value" : "REWIND"
           }
         },
         "ja" : {
@@ -108,7 +108,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Save"
+            "value" : "SAVE"
           }
         },
         "ja" : {
@@ -127,7 +127,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Select a photo"
+            "value" : "Select a photo to begin"
           }
         },
         "ja" : {
