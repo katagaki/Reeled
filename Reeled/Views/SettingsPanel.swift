@@ -116,7 +116,7 @@ struct VintageSlider: View {
                 .frame(height: thumbSize)
                 .contentShape(Rectangle())
                 .gesture(
-                    DragGesture(minimumDistance: 0)
+                    DragGesture(minimumDistance: 1)
                         .onChanged { gesture in
                             if !isDragging {
                                 isDragging = true
