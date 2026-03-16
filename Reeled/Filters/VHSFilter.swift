@@ -7,9 +7,45 @@ struct VHSFilter: Sendable {
 
     nonisolated static let context = CIContext(options: [.useSoftwareRenderer: false])
 
+    /// VHS horizontal resolution was ~320 lines mapped to a 4:3 frame.
+    /// We use 640x480 as a recognisable doubled-up VHS frame size.
+    nonisolated private static let vhsLongEdge: CGFloat = 640
+    nonisolated private static let vhsShortEdge: CGFloat = 480
+
     nonisolated static func apply(to image: UIImage, settings: VHSFilterSettings.Snapshot) -> UIImage? {
         guard let cgImage = image.cgImage else { return nil }
-        let ciImage = CIImage(cgImage: cgImage)
+        let original = CIImage(cgImage: cgImage)
+
+        // Center-crop to 4:3, then scale down to VHS resolution (640x480)
+        let srcW = original.extent.width
+        let srcH = original.extent.height
+        let isLandscape = srcW >= srcH
+        let targetW: CGFloat = isLandscape ? vhsLongEdge : vhsShortEdge
+        let targetH: CGFloat = isLandscape ? vhsShortEdge : vhsLongEdge
+        let targetAspect = targetW / targetH
+
+        // Crop to target aspect ratio from center
+        let srcAspect = srcW / srcH
+        let cropRect: CGRect
+        if srcAspect > targetAspect {
+            // Source is wider — crop sides
+            let cropW = srcH * targetAspect
+            cropRect = CGRect(x: (srcW - cropW) / 2, y: 0, width: cropW, height: srcH)
+        } else {
+            // Source is taller — crop top/bottom
+            let cropH = srcW / targetAspect
+            cropRect = CGRect(x: 0, y: (srcH - cropH) / 2, width: srcW, height: cropH)
+        }
+        let cropped = original.cropped(to: cropRect)
+
+        // Scale to VHS dimensions
+        let scaleX = targetW / cropped.extent.width
+        let scaleY = targetH / cropped.extent.height
+        let scaled = cropped.transformed(by: CGAffineTransform(scaleX: scaleX, y: scaleY))
+        // Reset origin to (0,0) after transforms
+        let ciImage = scaled.transformed(by: CGAffineTransform(translationX: -scaled.extent.origin.x,
+                                                                y: -scaled.extent.origin.y))
+
         let extent = ciImage.extent
         let seed = UInt64.random(in: 0...UInt64.max)
         let scale = extent.width / 1000.0
@@ -161,7 +197,7 @@ struct VHSFilter: Sendable {
         }
 
         guard let outputCGImage = context.createCGImage(result, from: extent) else { return nil }
-        return UIImage(cgImage: outputCGImage, scale: image.scale, orientation: image.imageOrientation)
+        return UIImage(cgImage: outputCGImage, scale: 1.0, orientation: image.imageOrientation)
     }
 
     nonisolated private static func generateScanlines(size: CGSize, scale: CGFloat, seed: UInt64, opacity: Double) -> CIImage? {
@@ -461,7 +497,7 @@ struct VHSFilter: Sendable {
     }
 }
 
-struct SeededRNG: RandomNumberGenerator {
+nonisolated struct SeededRNG: RandomNumberGenerator {
     private var state: UInt64
 
     init(seed: UInt64) {
