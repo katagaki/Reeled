@@ -13,8 +13,7 @@ struct VHSFilter: Sendable {
     nonisolated private static let vhsShortEdge: CGFloat = 480
 
     nonisolated static func apply(to image: UIImage, settings: VHSFilterSettings.Snapshot) -> UIImage? {
-        guard let cgImage = image.cgImage else { return nil }
-        let original = CIImage(cgImage: cgImage)
+        guard let original = CIImage(image: image) else { return nil }
 
         // Center-crop to 4:3, then scale down to VHS resolution (640x480)
         let srcW = original.extent.width
@@ -201,7 +200,7 @@ struct VHSFilter: Sendable {
         }
 
         guard let outputCGImage = context.createCGImage(result, from: extent) else { return nil }
-        return UIImage(cgImage: outputCGImage, scale: 1.0, orientation: image.imageOrientation)
+        return UIImage(cgImage: outputCGImage, scale: 1.0, orientation: .up)
     }
 
     nonisolated private static func generateScanlines(size: CGSize, scale: CGFloat, seed: UInt64, opacity: Double) -> CIImage? {
