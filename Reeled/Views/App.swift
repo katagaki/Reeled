@@ -11,7 +11,23 @@ import SwiftUI
 struct ReeledApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ThemeRoot {
+                ContentView()
+            }
         }
+    }
+}
+
+struct ThemeRoot<Content: View>: View {
+    @Environment(\.colorScheme) private var colorScheme
+    let content: () -> Content
+
+    init(@ViewBuilder content: @escaping () -> Content) {
+        self.content = content
+    }
+
+    var body: some View {
+        content()
+            .environment(\.theme, Theme(colorScheme: colorScheme))
     }
 }

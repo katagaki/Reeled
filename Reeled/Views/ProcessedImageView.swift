@@ -2,11 +2,13 @@ import SwiftUI
 import UIKit
 
 struct ProcessedImageView: View {
+    @Environment(\.theme) private var theme
+
     let image: UIImage
 
     var body: some View {
         ZStack {
-            Color(red: 0.02, green: 0.02, blue: 0.03)
+            theme.processedImageBackground
 
             Image(uiImage: image)
                 .resizable()
@@ -14,10 +16,10 @@ struct ProcessedImageView: View {
 
             LinearGradient(
                 colors: [
-                    Color.white.opacity(0.04),
+                    theme.processedImageOverlayTop,
                     Color.clear,
                     Color.clear,
-                    Color.white.opacity(0.02)
+                    theme.processedImageOverlayBottom
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing

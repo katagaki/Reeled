@@ -2,6 +2,8 @@ import SwiftUI
 import UIKit
 
 struct VintageSlider: View {
+    @Environment(\.theme) private var theme
+
     let label: String
     @Binding var value: Double
     let range: ClosedRange<Double>
@@ -13,13 +15,12 @@ struct VintageSlider: View {
 
     private let trackHeight: CGFloat = 6
     private let thumbSize: CGFloat = 22
-    private let accentBeige = Color(red: 0.88, green: 0.84, blue: 0.74)
 
     var body: some View {
         VStack(spacing: 6) {
             Text(label)
                 .font(.system(size: 11, weight: .medium, design: .monospaced))
-                .foregroundStyle(Color(red: 0.70, green: 0.68, blue: 0.62))
+                .foregroundStyle(theme.sliderLabel)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             GeometryReader { geo in
@@ -29,15 +30,15 @@ struct VintageSlider: View {
 
                 ZStack(alignment: .leading) {
                     Capsule()
-                        .fill(Color(red: 0.06, green: 0.06, blue: 0.07))
+                        .fill(theme.sliderTrack)
                         .frame(height: trackHeight)
                         .overlay {
                             Capsule()
                                 .strokeBorder(
                                     LinearGradient(
                                         colors: [
-                                            Color.black.opacity(0.5),
-                                            Color.white.opacity(0.04)
+                                            theme.sliderTrackBorderTop,
+                                            theme.sliderTrackBorderBottom
                                         ],
                                         startPoint: .top,
                                         endPoint: .bottom
@@ -51,8 +52,8 @@ struct VintageSlider: View {
                         .fill(
                             LinearGradient(
                                 colors: [
-                                    accentBeige.opacity(0.7),
-                                    accentBeige.opacity(0.4)
+                                    theme.sliderAccent.opacity(0.7),
+                                    theme.sliderAccent.opacity(0.4)
                                 ],
                                 startPoint: .top,
                                 endPoint: .bottom
@@ -65,13 +66,13 @@ struct VintageSlider: View {
                         .fill(
                             LinearGradient(
                                 colors: isDragging ? [
-                                    Color(red: 0.22, green: 0.22, blue: 0.26),
-                                    Color(red: 0.16, green: 0.16, blue: 0.19),
-                                    Color(red: 0.12, green: 0.12, blue: 0.14)
+                                    theme.sliderThumbPressedTop,
+                                    theme.sliderThumbPressedMid,
+                                    theme.sliderThumbPressedBottom
                                 ] : [
-                                    Color(red: 0.32, green: 0.32, blue: 0.36),
-                                    Color(red: 0.20, green: 0.20, blue: 0.23),
-                                    Color(red: 0.15, green: 0.15, blue: 0.17)
+                                    theme.sliderThumbTop,
+                                    theme.sliderThumbMid,
+                                    theme.sliderThumbBottom
                                 ],
                                 startPoint: .top,
                                 endPoint: .bottom
@@ -83,15 +84,15 @@ struct VintageSlider: View {
                                 .strokeBorder(
                                     LinearGradient(
                                         colors: isDragging ? [
-                                            Color.black.opacity(0.25),
-                                            Color.black.opacity(0.15),
-                                            Color.white.opacity(0.04),
-                                            Color.white.opacity(0.08)
+                                            theme.sliderThumbBorderTopPressed,
+                                            theme.sliderThumbBorderMidPressed,
+                                            theme.sliderThumbBorderBottom1Pressed,
+                                            theme.sliderThumbBorderBottom2Pressed
                                         ] : [
-                                            Color.white.opacity(0.20),
-                                            Color.white.opacity(0.05),
-                                            Color.black.opacity(0.15),
-                                            Color.black.opacity(0.25)
+                                            theme.sliderThumbBorderTopNormal,
+                                            theme.sliderThumbBorderMidNormal,
+                                            theme.sliderThumbBorderBottom1Normal,
+                                            theme.sliderThumbBorderBottom2Normal
                                         ],
                                         startPoint: .top,
                                         endPoint: .bottom
@@ -101,11 +102,11 @@ struct VintageSlider: View {
                         }
                         .overlay {
                             Circle()
-                                .fill(Color.black.opacity(isDragging ? 0.3 : 0.2))
+                                .fill(theme.sliderThumbDot.opacity(isDragging ? 0.3 : 0.2))
                                 .frame(width: 6, height: 6)
                         }
                         .shadow(
-                            color: isDragging ? .clear : .black.opacity(0.4),
+                            color: isDragging ? .clear : theme.sliderThumbShadow,
                             radius: isDragging ? 0 : 2,
                             y: isDragging ? 0 : 1
                         )

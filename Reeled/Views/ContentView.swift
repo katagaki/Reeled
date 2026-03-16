@@ -4,6 +4,7 @@ import UIKit
 
 struct ContentView: View {
 
+    @Environment(\.theme) private var theme
     @State private var selectedItem: PhotosPickerItem?
     @State private var originalImage: UIImage?
     @State private var processedImage: UIImage?
@@ -14,20 +15,13 @@ struct ContentView: View {
     @State private var settings = VHSFilterSettings()
     @State private var debounceTask: Task<Void, Never>?
 
-    private let shellDark = Color(red: 0.12, green: 0.12, blue: 0.14)
-    private let shellMid = Color(red: 0.22, green: 0.22, blue: 0.25)
-    private let shellLight = Color(red: 0.32, green: 0.32, blue: 0.36)
-    private let shellHighlight = Color(red: 0.45, green: 0.45, blue: 0.50)
-    private let plasticBlue = Color(red: 0.15, green: 0.20, blue: 0.35)
-    private let labelCream = Color(red: 0.92, green: 0.88, blue: 0.78)
-
     var body: some View {
         ZStack {
             LinearGradient(
                 colors: [
-                    Color(red: 0.16, green: 0.16, blue: 0.18),
-                    Color(red: 0.10, green: 0.10, blue: 0.12),
-                    Color(red: 0.08, green: 0.08, blue: 0.10)
+                    theme.backgroundTop,
+                    theme.backgroundMid,
+                    theme.backgroundBottom
                 ],
                 startPoint: .top,
                 endPoint: .bottom
@@ -42,17 +36,17 @@ struct ContentView: View {
                         ZStack {
                             LinearGradient(
                                 colors: [
-                                    Color(red: 0.24, green: 0.24, blue: 0.27),
-                                    Color(red: 0.18, green: 0.18, blue: 0.21),
-                                    Color(red: 0.14, green: 0.14, blue: 0.16)
+                                    theme.headerTop,
+                                    theme.headerMid,
+                                    theme.headerBottom
                                 ],
                                 startPoint: .top,
                                 endPoint: .bottom
                             )
                             LinearGradient(
                                 colors: [
-                                    Color.white.opacity(0.08),
-                                    Color.white.opacity(0.02),
+                                    theme.headerHighlightTop,
+                                    theme.headerHighlightMid,
                                     Color.clear
                                 ],
                                 startPoint: .top,
@@ -63,7 +57,7 @@ struct ContentView: View {
                     )
                     .overlay(alignment: .bottom) {
                         Rectangle()
-                            .fill(Color.black.opacity(0.4))
+                            .fill(theme.headerDividerBottom)
                             .frame(height: 1)
                     }
 
@@ -130,10 +124,10 @@ struct ContentView: View {
             Spacer()
             ProgressView()
                 .scaleEffect(1.5)
-                .tint(Color(red: 0.4, green: 0.7, blue: 0.5))
+                .tint(theme.processingTint)
             Text(String(localized: "Processing.Dubbing"))
                 .font(.system(size: 14, weight: .medium, design: .monospaced))
-                .foregroundStyle(Color(red: 0.4, green: 0.7, blue: 0.5))
+                .foregroundStyle(theme.processingTint)
             Spacer()
         }
     }
@@ -173,7 +167,7 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 10) {
             Text(title)
                 .font(.system(size: 11, weight: .bold, design: .monospaced))
-                .foregroundStyle(Color(red: 0.55, green: 0.55, blue: 0.60))
+                .foregroundStyle(theme.settingsGroupTitle)
                 .padding(.leading, 4)
 
             VStack(spacing: 14) {
@@ -182,14 +176,14 @@ struct ContentView: View {
             .padding(12)
             .background(
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(Color(red: 0.14, green: 0.14, blue: 0.16))
+                    .fill(theme.settingsGroupBackground)
                     .overlay {
                         RoundedRectangle(cornerRadius: 8)
                             .strokeBorder(
                                 LinearGradient(
                                     colors: [
-                                        Color.white.opacity(0.06),
-                                        Color.black.opacity(0.2)
+                                        theme.settingsGroupBorderTop,
+                                        theme.settingsGroupBorderBottom
                                     ],
                                     startPoint: .top,
                                     endPoint: .bottom
@@ -205,10 +199,10 @@ struct ContentView: View {
     private var controlBar: some View {
         VStack(spacing: 0) {
             Rectangle()
-                .fill(Color.white.opacity(0.08))
+                .fill(theme.controlBarTopEdge)
                 .frame(height: 0.5)
             Rectangle()
-                .fill(Color.black.opacity(0.4))
+                .fill(theme.controlBarBottomEdge)
                 .frame(height: 0.5)
 
             HStack(spacing: 0) {
@@ -257,16 +251,16 @@ struct ContentView: View {
             ZStack {
                 LinearGradient(
                     colors: [
-                        Color(red: 0.20, green: 0.20, blue: 0.23),
-                        Color(red: 0.14, green: 0.14, blue: 0.16),
-                        Color(red: 0.10, green: 0.10, blue: 0.12)
+                        theme.controlBarTop,
+                        theme.controlBarMid,
+                        theme.controlBarBottom
                     ],
                     startPoint: .top,
                     endPoint: .bottom
                 )
                 LinearGradient(
                     colors: [
-                        Color.white.opacity(0.05),
+                        theme.controlBarHighlight,
                         Color.clear
                     ],
                     startPoint: .top,
