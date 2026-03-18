@@ -519,6 +519,7 @@ struct ContentView: View {
         }
         isExporting = true
         exportProgress = 0
+        UIApplication.shared.isIdleTimerDisabled = true
         let snap = settings.snapshot()
         let videoURL = sourceVideoURL
 
@@ -563,6 +564,7 @@ struct ContentView: View {
 
                 await MainActor.run {
                     isExporting = false
+                    UIApplication.shared.isIdleTimerDisabled = false
                     videoPreviewEngine?.play()
                     showDoneIndicator()
                     debugPrint("[ContentView] Export flow complete, UI reset")
@@ -571,6 +573,7 @@ struct ContentView: View {
                 debugPrint("[ContentView] Export error: \(error)")
                 await MainActor.run {
                     isExporting = false
+                    UIApplication.shared.isIdleTimerDisabled = false
                     videoPreviewEngine?.play()
                     saveErrorMessage = error.localizedDescription
                     showingSaveError = true
