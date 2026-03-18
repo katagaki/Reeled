@@ -74,6 +74,18 @@ final class VideoPreviewEngine: @unchecked Sendable {
         if isPlaying {
             startTime = CACurrentMediaTime()
         }
+        // Show the first frame immediately
+        guard let extractor else { return }
+        let snap = settings
+        Task.detached { [weak self] in
+            guard let self else { return }
+            if let first = await extractor.frame(at: 0) {
+                let filtered = VHSFilter.apply(to: first, settings: snap)
+                await MainActor.run {
+                    self.currentFrame = filtered
+                }
+            }
+        }
     }
 
     @MainActor
