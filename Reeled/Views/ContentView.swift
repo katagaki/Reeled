@@ -238,6 +238,7 @@ struct ContentView: View {
                     Text("")
                 }
                 .buttonStyle(PlasticButtonStyle(label: String(localized: "Button.Insert"), systemImage: "eject.fill", tint: .blue))
+                .disabled(isExporting)
 
                 Button {
                     settings.resetToDefaults()
@@ -245,8 +246,7 @@ struct ContentView: View {
                     Text("")
                 }
                 .buttonStyle(PlasticButtonStyle(label: String(localized: "Button.Reset"), systemImage: "arrow.uturn.backward", tint: .red))
-                .disabled(originalImage == nil)
-                .opacity(originalImage == nil ? 0.4 : 1.0)
+                .disabled(originalImage == nil || isExporting)
 
                 Button {
                     reprocess()
@@ -254,8 +254,7 @@ struct ContentView: View {
                     Text("")
                 }
                 .buttonStyle(PlasticButtonStyle(label: String(localized: "Button.Rewind"), systemImage: "backward.end.fill", tint: .gray))
-                .disabled(originalImage == nil || isProcessing)
-                .opacity(originalImage == nil ? 0.4 : 1.0)
+                .disabled(originalImage == nil || isProcessing || isExporting)
 
                 Button {
                     exportVideo()
@@ -264,7 +263,6 @@ struct ContentView: View {
                 }
                 .buttonStyle(PlasticButtonStyle(label: String(localized: "Button.Video"), systemImage: "film.stack", tint: .orange))
                 .disabled(originalImage == nil || isProcessing || isExporting)
-                .opacity(originalImage == nil ? 0.4 : 1.0)
 
                 Button {
                     savePhoto()
@@ -272,8 +270,7 @@ struct ContentView: View {
                     Text("")
                 }
                 .buttonStyle(PlasticButtonStyle(label: String(localized: "Button.Image"), systemImage: "photo", tint: .orange))
-                .disabled(processedImage == nil || isProcessing)
-                .opacity(processedImage == nil ? 0.4 : 1.0)
+                .disabled(processedImage == nil || isProcessing || isExporting)
             }
             .padding(.vertical, 14)
         }

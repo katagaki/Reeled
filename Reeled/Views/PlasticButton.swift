@@ -101,6 +101,8 @@ struct PlasticButton: View {
 }
 
 struct PlasticButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
     let label: String
     let systemImage: String
     let tint: Color
@@ -110,9 +112,10 @@ struct PlasticButtonStyle: ButtonStyle {
             label: label,
             systemImage: systemImage,
             tint: tint,
-            isPressed: configuration.isPressed
+            isPressed: configuration.isPressed || !isEnabled
         )
         .onChange(of: configuration.isPressed) { _, isPressed in
+            guard isEnabled else { return }
             if isPressed {
                 let press = UIImpactFeedbackGenerator(style: .medium)
                 press.impactOccurred()
