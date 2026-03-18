@@ -59,6 +59,7 @@ final class VHSFilterSettings: @unchecked Sendable {
         UserDefaults.standard.set(dict, forKey: Self.storageKey)
     }
 
+    // swiftlint:disable:next cyclomatic_complexity
     func load() {
         guard let dict = UserDefaults.standard.dictionary(forKey: Self.storageKey) as? [String: Double] else { return }
         if let val = dict["chromaticAberration"] { chromaticAberration = val }

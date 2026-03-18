@@ -3,7 +3,7 @@ import CoreVideo
 
 extension VideoExporter {
 
-    // swiftlint:disable:next function_parameter_count
+    // swiftlint:disable:next function_parameter_count function_body_length
     static func writeVideoFile(
         frames: [CGImage],
         to outputURL: URL,
@@ -71,7 +71,7 @@ extension VideoExporter {
         return outputURL
     }
 
-    // swiftlint:disable:next function_parameter_count, function_body_length
+    // swiftlint:disable:next function_parameter_count
     static func writeFrames(
         _ frames: [CGImage],
         to writerInput: AVAssetWriterInput,

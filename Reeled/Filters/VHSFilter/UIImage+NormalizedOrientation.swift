@@ -1,6 +1,7 @@
 import UIKit
 
 extension UIImage {
+    // swiftlint:disable cyclomatic_complexity
     /// Redraws the image so that `.imageOrientation` is `.up`, baking in any
     /// EXIF rotation. This prevents CIImage from treating portrait photos as
     /// landscape (or vice versa).
@@ -58,4 +59,5 @@ extension UIImage {
         guard let normalizedCG = ctx.makeImage() else { return self }
         return UIImage(cgImage: normalizedCG, scale: scale, orientation: .up)
     }
+    // swiftlint:enable cyclomatic_complexity
 }

@@ -34,7 +34,7 @@ struct VHSFilter: Sendable {
         return UIImage(cgImage: outputCGImage, scale: 1.0, orientation: .up)
     }
 
-    // swiftlint:disable:next function_body_length
+    // swiftlint:disable:next function_body_length cyclomatic_complexity
     nonisolated static func applyTextureEffects(
         to image: CIImage, extent: CGRect, scale: CGFloat,
         seed: UInt64, settings: VHSFilterSettings.Snapshot

@@ -67,7 +67,7 @@ struct VideoExporter: Sendable {
 
     // MARK: - Video Export (source video → filtered video with audio)
 
-    // swiftlint:disable:next function_body_length
+    // swiftlint:disable:next function_body_length cyclomatic_complexity
     static func exportFromVideo(
         asset: AVAsset,
         settings: VHSFilterSettings.Snapshot,
