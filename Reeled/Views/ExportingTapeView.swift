@@ -8,6 +8,12 @@ struct ExportingTapeView: View {
 
     @State private var reelRotation: Double = 0
 
+    private var exportDateString: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy.MM.dd"
+        return formatter.string(from: Date())
+    }
+
     /// Left reel starts full, right reel starts empty.
     private var leftFill: CGFloat {
         CGFloat(0.85 - 0.55 * progress)
@@ -114,10 +120,11 @@ struct ExportingTapeView: View {
                                     .font(.system(size: 8, weight: .heavy))
                                     .foregroundStyle(theme.tapeLabelTitle)
                                 Spacer()
-                                Text(filename ?? "")
-                                    .font(.system(size: 7, weight: .bold))
+                                Text(exportDateString)
+                                    .font(.custom("Bradley Hand", size: 12))
+                                    .bold()
                                     .foregroundStyle(theme.tapeLabelSubtitle)
-                                    .lineLimit(1)
+                                    .zIndex(1)
                             }
                             .padding(.horizontal, 8)
                             Rectangle()

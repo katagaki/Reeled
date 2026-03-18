@@ -27,6 +27,13 @@ struct TapeReelView: View {
             Circle()
                 .fill(theme.reelHubFill)
                 .frame(width: 14, height: 14)
+            ForEach(0..<3, id: \.self) { i in
+                Capsule()
+                    .fill(theme.reelHubBorder.opacity(0.5))
+                    .frame(width: 1.5, height: 5)
+                    .offset(y: 3.5)
+                    .rotationEffect(.degrees(Double(i) * 120))
+            }
             Circle()
                 .strokeBorder(theme.reelHubBorder, lineWidth: 1)
                 .frame(width: 14, height: 14)

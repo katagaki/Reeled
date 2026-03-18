@@ -102,9 +102,11 @@ struct EmptyStateView: View {
                                         .font(.system(size: 8, weight: .heavy))
                                         .foregroundStyle(theme.tapeLabelTitle)
                                     Spacer()
-                                    Text("R-33L-D  Hi-Fi STEREO")
-                                        .font(.system(size: 7, weight: .bold))
+                                    Text("WELCOME TO REELED")
+                                        .font(.custom("Bradley Hand", size: 12))
+                                        .bold()
                                         .foregroundStyle(theme.tapeLabelSubtitle)
+                                        .zIndex(1)
                                 }
                                 .padding(.horizontal, 8)
                                 Rectangle()

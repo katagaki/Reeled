@@ -23,91 +23,6 @@
         }
       }
     },
-    "Alert.ExportSuccess.Message" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Video saved to library."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ビデオをライブラリに保存しました。"
-          }
-        }
-      }
-    },
-    "Alert.ExportSuccess.Title" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Exported"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "書き出し完了"
-          }
-        }
-      }
-    },
-    "Alert.SaveSuccess.Message" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Photo saved to library."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "写真をライブラリに保存しました。"
-          }
-        }
-      }
-    },
-    "Alert.SaveSuccess.Title" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Saved"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "保存完了"
-          }
-        }
-      }
-    },
-    "Button.Export" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "EXPORT"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "書出"
-          }
-        }
-      }
-    },
     "Button.Image" : {
       "localizations" : {
         "en" : {
@@ -172,23 +87,6 @@
         }
       }
     },
-    "Button.Save" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "SAVE"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "保存"
-          }
-        }
-      }
-    },
     "Button.Video" : {
       "localizations" : {
         "en" : {
@@ -208,23 +106,6 @@
     "Do not touch the tape inside" : {
       "shouldTranslate" : false
     },
-    "EmptyState.SelectPhoto" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Select a photo to begin"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "写真を選択してください"
-          }
-        }
-      }
-    },
     "Insert this side into recorder" : {
       "shouldTranslate" : false
     },
@@ -234,47 +115,13 @@
     "OK" : {
       "shouldTranslate" : false
     },
-    "Processing.Dubbing" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dubbing..."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ダビング中..."
-          }
-        }
-      }
-    },
-    "Processing.Exporting" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recording to tape..."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "テープに録画中..."
-          }
-        }
-      }
-    },
-    "R-33L-D  Hi-Fi STEREO" : {
+    "REC" : {
       "shouldTranslate" : false
     },
-    "REC" : {
-
-    },
     "VHS" : {
+      "shouldTranslate" : false
+    },
+    "WELCOME TO REELED" : {
       "shouldTranslate" : false
     }
   },
