@@ -18,7 +18,6 @@ struct ExportingTapeView: View {
 
     var body: some View {
         ZStack {
-            // Tape shell
             RoundedRectangle(cornerRadius: 6)
                 .fill(
                     LinearGradient(
@@ -31,7 +30,7 @@ struct ExportingTapeView: View {
                         endPoint: .bottom
                     )
                 )
-                .frame(width: 220, height: 138)
+                .frame(width: 280, height: 175)
                 .overlay {
                     RoundedRectangle(cornerRadius: 6)
                         .fill(
@@ -62,9 +61,40 @@ struct ExportingTapeView: View {
                             lineWidth: 1
                         )
                 }
+                .shadow(color: theme.tapeShellShadow, radius: 8, y: 4)
 
             VStack(spacing: 0) {
-                // Label area
+                HStack(spacing: 0) {
+                    Text("Insert this side into recorder")
+                        .font(.system(size: 6.5, weight: .medium))
+                        .foregroundStyle(theme.tapeSmallText)
+                    Spacer()
+                    Text("▲")
+                        .font(.system(size: 5))
+                        .foregroundStyle(theme.tapeSmallText)
+                    Spacer()
+                    Text("Do not touch the tape inside")
+                        .font(.system(size: 6.5, weight: .medium))
+                        .foregroundStyle(theme.tapeSmallText)
+                }
+                .padding(.horizontal, 14)
+                .padding(.top, 8)
+                .padding(.bottom, 5)
+
+                VStack(spacing: 2) {
+                    ForEach(0..<4, id: \.self) { _ in
+                        RoundedRectangle(cornerRadius: 0.5)
+                            .fill(theme.tapeGrooveLine)
+                            .frame(width: 200, height: 1.5)
+                            .overlay(alignment: .top) {
+                                Rectangle()
+                                    .fill(theme.tapeGrooveHighlight)
+                                    .frame(height: 0.5)
+                            }
+                    }
+                }
+                .padding(.bottom, 6)
+
                 RoundedRectangle(cornerRadius: 3)
                     .fill(
                         LinearGradient(
@@ -76,12 +106,12 @@ struct ExportingTapeView: View {
                             endPoint: .bottom
                         )
                     )
-                    .frame(width: 190, height: 36)
+                    .frame(width: 245, height: 48)
                     .overlay {
-                        VStack(spacing: 2) {
+                        VStack(spacing: 3) {
                             HStack {
                                 Text("VHS")
-                                    .font(.system(size: 7, weight: .heavy))
+                                    .font(.system(size: 8, weight: .heavy))
                                     .foregroundStyle(theme.tapeLabelTitle)
                                 Spacer()
                                 Text(filename ?? "")
@@ -89,11 +119,11 @@ struct ExportingTapeView: View {
                                     .foregroundStyle(theme.tapeLabelSubtitle)
                                     .lineLimit(1)
                             }
-                            .padding(.horizontal, 6)
+                            .padding(.horizontal, 8)
                             Rectangle()
                                 .fill(theme.tapeLabelLine)
                                 .frame(height: 0.5)
-                                .padding(.horizontal, 4)
+                                .padding(.horizontal, 6)
                             HStack {
                                 Rectangle()
                                     .fill(theme.tapeLabelLine.opacity(0.5))
@@ -102,22 +132,29 @@ struct ExportingTapeView: View {
                                     .fill(theme.tapeLabelLine.opacity(0.5))
                                     .frame(height: 0.5)
                             }
-                            .padding(.horizontal, 4)
+                            .padding(.horizontal, 6)
+                            HStack {
+                                Rectangle()
+                                    .fill(theme.tapeLabelLine.opacity(0.5))
+                                    .frame(height: 0.5)
+                                Rectangle()
+                                    .fill(theme.tapeLabelLine.opacity(0.5))
+                                    .frame(height: 0.5)
+                            }
+                            .padding(.horizontal, 6)
                         }
                     }
                     .overlay {
                         RoundedRectangle(cornerRadius: 3)
                             .strokeBorder(theme.tapeLabelBorder, lineWidth: 0.5)
                     }
-                    .padding(.top, 10)
 
-                Spacer(minLength: 4)
+                Spacer(minLength: 5)
 
-                // Window with spinning reels
                 ZStack {
                     RoundedRectangle(cornerRadius: 4)
                         .fill(theme.tapeWindowBackground)
-                        .frame(width: 190, height: 44)
+                        .frame(width: 245, height: 50)
                         .overlay {
                             RoundedRectangle(cornerRadius: 4)
                                 .strokeBorder(
@@ -135,13 +172,13 @@ struct ExportingTapeView: View {
 
                     HStack(spacing: 0) {
                         SpinningReelView(fillAmount: leftFill, rotation: reelRotation)
-                            .frame(width: 40, height: 40)
+                            .frame(width: 44, height: 44)
 
                         Spacer()
 
                         Circle()
                             .fill(theme.tapePinFill)
-                            .frame(width: 5, height: 5)
+                            .frame(width: 6, height: 6)
                             .overlay {
                                 Circle()
                                     .strokeBorder(theme.tapePinBorder, lineWidth: 0.5)
@@ -150,14 +187,14 @@ struct ExportingTapeView: View {
                         Spacer()
 
                         SpinningReelView(fillAmount: rightFill, rotation: reelRotation)
-                            .frame(width: 40, height: 40)
+                            .frame(width: 44, height: 44)
                     }
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal, 30)
                 }
 
                 Spacer(minLength: 6)
             }
-            .frame(width: 220, height: 138)
+            .frame(width: 280, height: 175)
         }
         .onAppear {
             withAnimation(.linear(duration: 2).repeatForever(autoreverses: false)) {
@@ -209,31 +246,31 @@ private struct SpinningReelView: View {
                         ],
                         center: .center,
                         startRadius: 2,
-                        endRadius: 20 * fillAmount
+                        endRadius: 22 * fillAmount
                     )
                 )
-                .frame(width: 40 * fillAmount, height: 40 * fillAmount)
+                .frame(width: 44 * fillAmount, height: 44 * fillAmount)
             Circle()
                 .strokeBorder(theme.reelTapeBorder, lineWidth: 1)
-                .frame(width: 40 * fillAmount, height: 40 * fillAmount)
+                .frame(width: 44 * fillAmount, height: 44 * fillAmount)
             // Hub with notches
             Circle()
                 .fill(theme.reelHubFill)
-                .frame(width: 12, height: 12)
+                .frame(width: 14, height: 14)
             ForEach(0..<3, id: \.self) { i in
                 Capsule()
                     .fill(theme.reelHubBorder.opacity(0.5))
-                    .frame(width: 1.5, height: 4)
-                    .offset(y: 3)
+                    .frame(width: 1.5, height: 5)
+                    .offset(y: 3.5)
                     .rotationEffect(.degrees(Double(i) * 120))
             }
             Circle()
                 .strokeBorder(theme.reelHubBorder, lineWidth: 1)
-                .frame(width: 12, height: 12)
+                .frame(width: 14, height: 14)
             ForEach(0..<6, id: \.self) { i in
                 RoundedRectangle(cornerRadius: 0.5)
                     .fill(theme.reelSpoke)
-                    .frame(width: 2, height: 5)
+                    .frame(width: 2, height: 6)
                     .rotationEffect(.degrees(Double(i) * 60))
             }
         }
