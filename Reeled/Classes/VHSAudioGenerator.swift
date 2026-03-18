@@ -43,8 +43,8 @@ struct VHSAudioGenerator {
 
     private static func addTapeHum(to samples: UnsafeMutablePointer<Float>, sampleCount: Int) {
         let humFrequencies: [(freq: Double, amp: Float)] = [
-            (60.0, 0.30),
-            (120.0, 0.20),
+            (60.0, 0.20),
+            (120.0, 0.16),
             (180.0, 0.10),
             (240.0, 0.04)
         ]

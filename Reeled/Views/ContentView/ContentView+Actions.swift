@@ -111,29 +111,19 @@ extension ContentView {
         let tempDir = FileManager.default.temporaryDirectory
         let tempURL = tempDir.appendingPathComponent(UUID().uuidString).appendingPathExtension("mov")
 
-        // Try to get video via PHAsset for better reliability
+        // Try to export video via PHAssetResource for reliability
         if let assetID = item.itemIdentifier {
             let results = PHAsset.fetchAssets(withLocalIdentifiers: [assetID], options: nil)
             if let phAsset = results.firstObject, phAsset.mediaType == .video {
-                return try await withCheckedThrowingContinuation { continuation in
-                    let options = PHVideoRequestOptions()
-                    options.version = .current
+                let resources = PHAssetResource.assetResources(for: phAsset)
+                if let videoResource = resources.first(where: { $0.type == .video })
+                    ?? resources.first(where: { $0.type == .fullSizeVideo }) {
+                    let options = PHAssetResourceRequestOptions()
                     options.isNetworkAccessAllowed = true
-                    PHImageManager.default().requestAVAsset(forVideo: phAsset, options: options) { avAsset, _, info in
-                        if let urlAsset = avAsset as? AVURLAsset {
-                            // Copy to temp location to ensure the URL stays valid
-                            do {
-                                try FileManager.default.copyItem(at: urlAsset.url, to: tempURL)
-                                continuation.resume(returning: tempURL)
-                            } catch {
-                                continuation.resume(throwing: error)
-                            }
-                        } else if let error = info?[PHImageErrorKey] as? Error {
-                            continuation.resume(throwing: error)
-                        } else {
-                            continuation.resume(throwing: VideoLoadError.failedToLoadVideo)
-                        }
-                    }
+                    try await PHAssetResourceManager.default().writeData(
+                        for: videoResource, toFile: tempURL, options: options
+                    )
+                    return tempURL
                 }
             }
         }
