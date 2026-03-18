@@ -118,7 +118,7 @@ struct VintageSlider: View {
                         )
                         .contentShape(Circle())
                         .simultaneousGesture(
-                            DragGesture(minimumDistance: 1, coordinateSpace: .named("slider"))
+                            DragGesture(minimumDistance: 0.5, coordinateSpace: .named("slider"))
                                 .onChanged { gesture in
                                     if dragAxis == .undecided {
                                         let dx = abs(gesture.translation.width)
