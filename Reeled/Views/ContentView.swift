@@ -1,7 +1,9 @@
+import AVFoundation
 import Photos
 import PhotosUI
 import SwiftUI
 import UIKit
+import UniformTypeIdentifiers
 
 struct ContentView: View {
 
@@ -18,6 +20,10 @@ struct ContentView: View {
     @State private var isExporting = false
     @State private var exportProgress: Double = 0
     @State private var showingDone = false
+    @State private var sourceVideoAsset: AVAsset?
+    @State private var sourceVideoURL: URL?
+    @State private var videoPreviewEngine: VideoPreviewEngine?
+    @State private var activeDragCount: Int = 0
 
     var body: some View {
         ZStack {
@@ -69,12 +75,14 @@ struct ContentView: View {
                     let imageHeight = geo.size.height * 0.5
                     let slidersHeight = geo.size.height * 0.5
 
-                    if processedImage == nil && !isProcessing && !isExporting {
+                    if processedImage == nil && videoPreviewEngine == nil && !isProcessing && !isExporting {
                         EmptyStateView()
                     } else {
                         VStack(spacing: 0) {
                             Group {
-                                if let processedImage {
+                                if let videoPreviewEngine {
+                                    FilteredVideoPreviewView(engine: videoPreviewEngine)
+                                } else if let processedImage {
                                     ProcessedImageView(image: processedImage)
                                 } else {
                                     Spacer()
@@ -92,7 +100,7 @@ struct ContentView: View {
                                 .frame(height: slidersHeight)
                             } else {
                                 ScrollView {
-                                    if processedImage != nil || isProcessing {
+                                    if processedImage != nil || videoPreviewEngine != nil || isProcessing {
                                         inlineSettingsPanel
                                     }
                                 }
@@ -115,11 +123,15 @@ struct ContentView: View {
         .onChange(of: settings.version) { _, _ in
             guard originalImage != nil else { return }
             settings.save()
-            debounceTask?.cancel()
-            debounceTask = Task {
-                try? await Task.sleep(for: .milliseconds(300))
-                guard !Task.isCancelled else { return }
-                reprocess()
+            if videoPreviewEngine != nil {
+                videoPreviewEngine?.updateSettings(settings.snapshot())
+            } else {
+                debounceTask?.cancel()
+                debounceTask = Task {
+                    try? await Task.sleep(for: .milliseconds(300))
+                    guard !Task.isCancelled else { return }
+                    reprocess()
+                }
             }
         }
         .alert(String(localized: "Alert.Error.Title"), isPresented: $showingSaveError) {
@@ -130,30 +142,42 @@ struct ContentView: View {
     }
 
     private var inlineSettingsPanel: some View {
-        VStack(spacing: 16) {
+        let dragHandler: (Bool) -> Void = { isDragging in
+            activeDragCount += isDragging ? 1 : -1
+            if let engine = videoPreviewEngine {
+                if activeDragCount > 0 {
+                    engine.pause()
+                } else {
+                    engine.updateSettings(settings.snapshot())
+                    engine.play()
+                }
+            }
+        }
+
+        return VStack(spacing: 16) {
             Spacer().frame(height: 0)
 
             settingsGroup("COLOR") {
-                VintageSlider(label: "SATURATION", value: $settings.saturation, range: 0...1.5)
-                VintageSlider(label: "BRIGHTNESS", value: $settings.brightness, range: -0.2...0.2)
-                VintageSlider(label: "CONTRAST", value: $settings.contrast, range: 0.5...1.5)
-                VintageSlider(label: "WARMTH", value: $settings.warmth, range: 4000...7000)
+                VintageSlider(label: "SATURATION", value: $settings.saturation, range: 0...1.5, onDragChanged: dragHandler)
+                VintageSlider(label: "BRIGHTNESS", value: $settings.brightness, range: -0.2...0.2, onDragChanged: dragHandler)
+                VintageSlider(label: "CONTRAST", value: $settings.contrast, range: 0.5...1.5, onDragChanged: dragHandler)
+                VintageSlider(label: "WARMTH", value: $settings.warmth, range: 4000...7000, onDragChanged: dragHandler)
             }
 
             settingsGroup("TEXTURE") {
-                VintageSlider(label: "SOFTNESS", value: $settings.softness, range: 0...2)
-                VintageSlider(label: "SHARPNESS", value: $settings.sharpness, range: 0...2)
-                VintageSlider(label: "SCANLINES", value: $settings.scanlineOpacity, range: 0...0.2)
-                VintageSlider(label: "NOISE LINES", value: $settings.noiseLines, range: 0...10)
-                VintageSlider(label: "DISPLACEMENT", value: $settings.displacement, range: 0...8)
-                VintageSlider(label: "GRAIN", value: $settings.grain, range: 0...0.5)
-                VintageSlider(label: "MICRO DISTORTION", value: $settings.microDistortion, range: 0...1.0)
+                VintageSlider(label: "SOFTNESS", value: $settings.softness, range: 0...2, onDragChanged: dragHandler)
+                VintageSlider(label: "SHARPNESS", value: $settings.sharpness, range: 0...2, onDragChanged: dragHandler)
+                VintageSlider(label: "SCANLINES", value: $settings.scanlineOpacity, range: 0...0.2, onDragChanged: dragHandler)
+                VintageSlider(label: "NOISE LINES", value: $settings.noiseLines, range: 0...10, onDragChanged: dragHandler)
+                VintageSlider(label: "DISPLACEMENT", value: $settings.displacement, range: 0...8, onDragChanged: dragHandler)
+                VintageSlider(label: "GRAIN", value: $settings.grain, range: 0...0.5, onDragChanged: dragHandler)
+                VintageSlider(label: "MICRO DISTORTION", value: $settings.microDistortion, range: 0...1.0, onDragChanged: dragHandler)
             }
 
             settingsGroup("ATMOSPHERE") {
-                VintageSlider(label: "VIGNETTE", value: $settings.vignette, range: 0...1.0)
-                VintageSlider(label: "BLOOM", value: $settings.bloom, range: 0...0.3)
-                VintageSlider(label: "CHROMATIC ABERRATION", value: $settings.chromaticAberration, range: 0...4)
+                VintageSlider(label: "VIGNETTE", value: $settings.vignette, range: 0...1.0, onDragChanged: dragHandler)
+                VintageSlider(label: "BLOOM", value: $settings.bloom, range: 0...0.3, onDragChanged: dragHandler)
+                VintageSlider(label: "CHROMATIC ABERRATION", value: $settings.chromaticAberration, range: 0...4, onDragChanged: dragHandler)
             }
 
             Spacer().frame(height: 0)
@@ -206,7 +230,7 @@ struct ContentView: View {
         } else if isProcessing {
             return "DUBBING"
         } else if originalImage == nil {
-            return "INSERT PHOTO TO BEGIN"
+            return "INSERT PHOTO OR VIDEO"
         } else {
             return "READY"
         }
@@ -234,7 +258,7 @@ struct ContentView: View {
                 .padding(.bottom, 4)
 
             HStack(spacing: 8) {
-                PhotosPicker(selection: $selectedItem, matching: .images) {
+                PhotosPicker(selection: $selectedItem, matching: .any(of: [.images, .videos])) {
                     Text("")
                 }
                 .buttonStyle(PlasticButtonStyle(label: String(localized: "Button.Insert"), systemImage: "eject.fill", tint: .blue))
@@ -249,7 +273,11 @@ struct ContentView: View {
                 .disabled(originalImage == nil || isExporting)
 
                 Button {
-                    reprocess()
+                    if videoPreviewEngine != nil {
+                        videoPreviewEngine?.restart()
+                    } else {
+                        reprocess()
+                    }
                 } label: {
                     Text("")
                 }
@@ -270,7 +298,7 @@ struct ContentView: View {
                     Text("")
                 }
                 .buttonStyle(PlasticButtonStyle(label: String(localized: "Button.Image"), systemImage: "photo", tint: .orange))
-                .disabled(processedImage == nil || isProcessing || isExporting)
+                .disabled((processedImage == nil && videoPreviewEngine == nil) || isProcessing || isExporting)
             }
             .padding(.vertical, 14)
         }
@@ -301,38 +329,148 @@ struct ContentView: View {
     private func loadAndProcess(item: PhotosPickerItem) {
         isProcessing = true
         if originalImage == nil { processedImage = nil }
+
+        // Stop any existing video preview
+        videoPreviewEngine?.stop()
+        videoPreviewEngine = nil
+        sourceVideoAsset = nil
+        sourceVideoURL = nil
+
         let snap = settings.snapshot()
         printSettings(snap)
 
-        Task.detached {
-            guard let data = try? await item.loadTransferable(type: Data.self),
-                  let uiImage = UIImage(data: data) else {
+        // Check if the selected item is a video
+        let isVideo = item.supportedContentTypes.contains(where: { $0.conforms(to: .movie) })
+
+        if isVideo {
+            Task {
+                do {
+                    let videoURL = try await loadVideoFile(from: item)
+                    let asset = AVURLAsset(url: videoURL)
+
+                    // Extract filename
+                    var filename: String?
+                    if let assetID = item.itemIdentifier {
+                        let results = PHAsset.fetchAssets(withLocalIdentifiers: [assetID], options: nil)
+                        if let phAsset = results.firstObject {
+                            let resources = PHAssetResource.assetResources(for: phAsset)
+                            filename = resources.first?.originalFilename
+                        }
+                    }
+
+                    // Extract first frame as originalImage
+                    let generator = AVAssetImageGenerator(asset: asset)
+                    generator.appliesPreferredTrackTransform = true
+                    generator.maximumSize = CGSize(width: 640, height: 640)
+                    if let (cgImage, _) = try? await generator.image(at: .zero) {
+                        let firstFrame = UIImage(cgImage: cgImage)
+                        await MainActor.run {
+                            originalFilename = filename
+                            originalImage = firstFrame
+                            sourceVideoAsset = asset
+                            sourceVideoURL = videoURL
+                        }
+
+                        // Create and start preview engine
+                        let engine = VideoPreviewEngine(settings: snap)
+                        await MainActor.run {
+                            videoPreviewEngine = engine
+                            isProcessing = false
+                        }
+                        await engine.load(asset: asset)
+                    } else {
+                        await MainActor.run {
+                            isProcessing = false
+                        }
+                    }
+                } catch {
+                    await MainActor.run {
+                        isProcessing = false
+                        saveErrorMessage = error.localizedDescription
+                        showingSaveError = true
+                    }
+                }
+            }
+        } else {
+            Task.detached {
+                guard let data = try? await item.loadTransferable(type: Data.self),
+                      let uiImage = UIImage(data: data) else {
+                    await MainActor.run {
+                        isProcessing = false
+                    }
+                    return
+                }
+
+                // Extract original filename from PHAsset, or fall back to content type
+                var filename: String?
+                if let assetID = item.itemIdentifier {
+                    let results = PHAsset.fetchAssets(withLocalIdentifiers: [assetID], options: nil)
+                    if let asset = results.firstObject {
+                        let resources = PHAssetResource.assetResources(for: asset)
+                        filename = resources.first?.originalFilename
+                    }
+                }
+
                 await MainActor.run {
+                    originalFilename = filename
+                    originalImage = uiImage
+                }
+
+                let result = VHSFilter.apply(to: uiImage, settings: snap)
+
+                await MainActor.run {
+                    processedImage = result
                     isProcessing = false
                 }
-                return
             }
+        }
+    }
 
-            // Extract original filename from PHAsset, or fall back to content type
-            var filename: String?
-            if let assetID = item.itemIdentifier {
-                let results = PHAsset.fetchAssets(withLocalIdentifiers: [assetID], options: nil)
-                if let asset = results.firstObject {
-                    let resources = PHAssetResource.assetResources(for: asset)
-                    filename = resources.first?.originalFilename
+    private func loadVideoFile(from item: PhotosPickerItem) async throws -> URL {
+        let tempDir = FileManager.default.temporaryDirectory
+        let tempURL = tempDir.appendingPathComponent(UUID().uuidString).appendingPathExtension("mov")
+
+        // Try to get video via PHAsset for better reliability
+        if let assetID = item.itemIdentifier {
+            let results = PHAsset.fetchAssets(withLocalIdentifiers: [assetID], options: nil)
+            if let phAsset = results.firstObject, phAsset.mediaType == .video {
+                return try await withCheckedThrowingContinuation { continuation in
+                    let options = PHVideoRequestOptions()
+                    options.version = .current
+                    options.isNetworkAccessAllowed = true
+                    PHImageManager.default().requestAVAsset(forVideo: phAsset, options: options) { avAsset, _, info in
+                        if let urlAsset = avAsset as? AVURLAsset {
+                            // Copy to temp location to ensure the URL stays valid
+                            do {
+                                try FileManager.default.copyItem(at: urlAsset.url, to: tempURL)
+                                continuation.resume(returning: tempURL)
+                            } catch {
+                                continuation.resume(throwing: error)
+                            }
+                        } else if let error = info?[PHImageErrorKey] as? Error {
+                            continuation.resume(throwing: error)
+                        } else {
+                            continuation.resume(throwing: VideoLoadError.failedToLoadVideo)
+                        }
+                    }
                 }
             }
+        }
 
-            await MainActor.run {
-                originalFilename = filename
-                originalImage = uiImage
-            }
+        // Fallback: load as data
+        guard let data = try await item.loadTransferable(type: Data.self) else {
+            throw VideoLoadError.failedToLoadVideo
+        }
+        try data.write(to: tempURL)
+        return tempURL
+    }
 
-            let result = VHSFilter.apply(to: uiImage, settings: snap)
+    enum VideoLoadError: LocalizedError {
+        case failedToLoadVideo
 
-            await MainActor.run {
-                processedImage = result
-                isProcessing = false
+        var errorDescription: String? {
+            switch self {
+            case .failedToLoadVideo: "Failed to load video."
             }
         }
     }
@@ -375,35 +513,65 @@ struct ContentView: View {
     }
 
     private func exportVideo() {
-        guard let originalImage, !isExporting else { return }
+        guard let originalImage, !isExporting else {
+            debugPrint("[ContentView] exportVideo guard failed: originalImage=\(originalImage != nil), isExporting=\(isExporting)")
+            return
+        }
         isExporting = true
         exportProgress = 0
         let snap = settings.snapshot()
+        let videoURL = sourceVideoURL
+
+        debugPrint("[ContentView] exportVideo started, hasVideoURL=\(videoURL != nil)")
+
+        // Pause video preview during export
+        videoPreviewEngine?.pause()
 
         Task.detached {
             do {
-                let url = try await VideoExporter.export(
-                    image: originalImage,
-                    settings: snap
-                ) { value in
-                    Task { @MainActor in
-                        exportProgress = value
+                let url: URL
+                if let videoURL {
+                    debugPrint("[ContentView] Calling exportFromVideo with URL: \(videoURL.lastPathComponent)")
+                    let asset = AVURLAsset(url: videoURL)
+                    url = try await VideoExporter.exportFromVideo(
+                        asset: asset,
+                        settings: snap
+                    ) { value in
+                        Task { @MainActor in
+                            exportProgress = value
+                        }
+                    }
+                } else {
+                    debugPrint("[ContentView] Calling export (image mode)")
+                    url = try await VideoExporter.export(
+                        image: originalImage,
+                        settings: snap
+                    ) { value in
+                        Task { @MainActor in
+                            exportProgress = value
+                        }
                     }
                 }
 
+                debugPrint("[ContentView] Export returned URL: \(url.lastPathComponent), saving to photo library...")
                 try await PHPhotoLibrary.shared().performChanges {
                     PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: url)
                 }
+                debugPrint("[ContentView] Saved to photo library successfully")
 
                 try? FileManager.default.removeItem(at: url)
 
                 await MainActor.run {
                     isExporting = false
+                    videoPreviewEngine?.play()
                     showDoneIndicator()
+                    debugPrint("[ContentView] Export flow complete, UI reset")
                 }
             } catch {
+                debugPrint("[ContentView] Export error: \(error)")
                 await MainActor.run {
                     isExporting = false
+                    videoPreviewEngine?.play()
                     saveErrorMessage = error.localizedDescription
                     showingSaveError = true
                 }
@@ -412,14 +580,14 @@ struct ContentView: View {
     }
 
     private func savePhoto() {
-        guard let processedImage else { return }
+        guard let imageToSave = processedImage ?? videoPreviewEngine?.currentFrame else { return }
         let saver = ImageSaver {
             showDoneIndicator()
         } onError: { error in
             saveErrorMessage = error.localizedDescription
             showingSaveError = true
         }
-        saver.save(image: processedImage)
+        saver.save(image: imageToSave)
     }
 
     private func showDoneIndicator() {

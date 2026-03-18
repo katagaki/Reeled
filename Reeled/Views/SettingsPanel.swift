@@ -8,6 +8,7 @@ struct VintageSlider: View {
     @Binding var value: Double
     let range: ClosedRange<Double>
     var format: String = "%.2f"
+    var onDragChanged: ((Bool) -> Void)?
 
     @State private var isDragging = false
     @State private var isAtMin = false
@@ -129,6 +130,7 @@ struct VintageSlider: View {
 
                                     if !isDragging {
                                         isDragging = true
+                                        onDragChanged?(true)
                                         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                                     }
                                     let x = gesture.location.x - thumbSize / 2
@@ -154,6 +156,7 @@ struct VintageSlider: View {
                                     isAtMax = false
                                     dragAxis = .undecided
                                     if wasDragging {
+                                        onDragChanged?(false)
                                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
                                     }
                                 }
