@@ -10,10 +10,19 @@ class ImageSaver: NSObject {
     }
 
     func save(image: UIImage) {
-        UIImageWriteToSavedPhotosAlbum(image, self, #selector(handleResult(_:didFinishSavingWithError:contextInfo:)), nil)
+        UIImageWriteToSavedPhotosAlbum(
+            image,
+            self,
+            #selector(handleResult(_:didFinishSavingWithError:contextInfo:)),
+            nil
+        )
     }
 
-    @objc private func handleResult(_ image: UIImage, didFinishSavingWithError error: Error?, contextInfo: UnsafeRawPointer) {
+    @objc private func handleResult(
+        _ image: UIImage,
+        didFinishSavingWithError error: Error?,
+        contextInfo: UnsafeRawPointer
+    ) {
         if let error {
             onError(error)
         } else {
