@@ -35,7 +35,7 @@ extension VHSFilter {
             kCIInputAngleKey: 0.0
         ]).cropped(to: extent)
 
-        let lumaIntensity = intensity * 0.7
+        let lumaIntensity = intensity * 0.35
         let scaledLuma = horizontalLuma.applyingFilter("CIColorMatrix", parameters: [
             "inputRVector": CIVector(x: CGFloat(lumaIntensity), y: 0, z: 0, w: 0),
             "inputGVector": CIVector(x: 0, y: CGFloat(lumaIntensity), z: 0, w: 0),
@@ -61,7 +61,7 @@ extension VHSFilter {
             kCIInputAngleKey: Float.pi / 2.0
         ]).cropped(to: extent)
 
-        let chromaIntensity = intensity * 0.35
+        let chromaIntensity = intensity * 0.08
         let scaledChroma = chromaSmeared.applyingFilter("CIColorMatrix", parameters: [
             "inputRVector": CIVector(x: CGFloat(chromaIntensity), y: 0, z: 0, w: 0),
             "inputGVector": CIVector(x: 0, y: CGFloat(chromaIntensity), z: 0, w: 0),

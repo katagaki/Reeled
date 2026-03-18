@@ -103,6 +103,7 @@ struct VHSFilter: Sendable {
                         kCIInputBackgroundImageKey: result
                     ])
                     .cropped(to: extent)
+
             }
         }
 

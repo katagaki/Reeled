@@ -24,29 +24,27 @@ struct VideoExporter: Sendable {
         debugPrint("[export] Pre-rendering \(totalFrames) filtered frames...")
         #endif
         let renderStart = CFAbsoluteTimeGetCurrent()
-        let renderedFrames: [CGImage] = try {
-            var frames: [CGImage] = []
-            frames.reserveCapacity(totalFrames)
-            for frame in 0..<totalFrames {
-                let rendered: CGImage? = autoreleasepool {
-                    VHSFilter.apply(to: image, settings: settings)?.cgImage
-                }
-                guard let rendered else {
-                    #if DEBUG
-                    debugPrint("[export] VHSFilter.apply returned nil at frame \(frame)")
-                    #endif
-                    throw ExportError.renderFailed
-                }
-                frames.append(rendered)
-                progress(Double(frame + 1) / Double(totalFrames) * 0.8)
-                #if DEBUG
-                if frame % 30 == 0 {
-                    debugPrint("[export] Pre-rendered \(frame + 1)/\(totalFrames)")
-                }
-                #endif
+        var renderedFrames: [CGImage] = []
+        renderedFrames.reserveCapacity(totalFrames)
+        for frame in 0..<totalFrames {
+            let rendered: CGImage? = autoreleasepool {
+                VHSFilter.apply(to: image, settings: settings)?.cgImage
             }
-            return frames
-        }()
+            guard let rendered else {
+                #if DEBUG
+                debugPrint("[export] VHSFilter.apply returned nil at frame \(frame)")
+                #endif
+                throw ExportError.renderFailed
+            }
+            renderedFrames.append(rendered)
+            progress(Double(frame + 1) / Double(totalFrames) * 0.8)
+            #if DEBUG
+            if frame % 30 == 0 {
+                debugPrint("[export] Pre-rendered \(frame + 1)/\(totalFrames)")
+            }
+            #endif
+            await Task.yield()
+        }
         #if DEBUG
         debugPrint("[export] Pre-render done in \(String(format: "%.2f", CFAbsoluteTimeGetCurrent() - renderStart))s")
         #endif

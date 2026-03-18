@@ -113,7 +113,7 @@ extension ContentView {
                         tint: .orange
                     )
                 )
-                .disabled((processedImage == nil && videoPreviewEngine == nil) || isProcessing || isExporting)
+                .disabled((processedImage == nil && videoPreviewEngine == nil) || sourceVideoAsset != nil || isProcessing || isExporting)
             }
             .padding(.vertical, 14)
         }
