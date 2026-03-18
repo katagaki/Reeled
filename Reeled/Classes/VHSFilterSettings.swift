@@ -61,20 +61,20 @@ final class VHSFilterSettings: @unchecked Sendable {
 
     func load() {
         guard let dict = UserDefaults.standard.dictionary(forKey: Self.storageKey) as? [String: Double] else { return }
-        if let v = dict["chromaticAberration"] { chromaticAberration = v }
-        if let v = dict["saturation"] { saturation = v }
-        if let v = dict["brightness"] { brightness = v }
-        if let v = dict["contrast"] { contrast = v }
-        if let v = dict["warmth"] { warmth = v }
-        if let v = dict["softness"] { softness = v }
-        if let v = dict["scanlineOpacity"] { scanlineOpacity = v }
-        if let v = dict["noiseLines"] { noiseLines = v }
-        if let v = dict["displacement"] { displacement = v }
-        if let v = dict["grain"] { grain = v }
-        if let v = dict["microDistortion"] { microDistortion = v }
-        if let v = dict["vignette"] { vignette = v }
-        if let v = dict["bloom"] { bloom = v }
-        if let v = dict["sharpness"] { sharpness = v }
+        if let val = dict["chromaticAberration"] { chromaticAberration = val }
+        if let val = dict["saturation"] { saturation = val }
+        if let val = dict["brightness"] { brightness = val }
+        if let val = dict["contrast"] { contrast = val }
+        if let val = dict["warmth"] { warmth = val }
+        if let val = dict["softness"] { softness = val }
+        if let val = dict["scanlineOpacity"] { scanlineOpacity = val }
+        if let val = dict["noiseLines"] { noiseLines = val }
+        if let val = dict["displacement"] { displacement = val }
+        if let val = dict["grain"] { grain = val }
+        if let val = dict["microDistortion"] { microDistortion = val }
+        if let val = dict["vignette"] { vignette = val }
+        if let val = dict["bloom"] { bloom = val }
+        if let val = dict["sharpness"] { sharpness = val }
     }
 
     func snapshot() -> Snapshot {

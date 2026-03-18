@@ -264,21 +264,21 @@ private struct SpinningReelView: View {
             Circle()
                 .fill(theme.reelHubFill)
                 .frame(width: 14, height: 14)
-            ForEach(0..<3, id: \.self) { i in
+            ForEach(0..<3, id: \.self) { idx in
                 Capsule()
                     .fill(theme.reelHubBorder.opacity(0.5))
                     .frame(width: 1.5, height: 5)
                     .offset(y: 3.5)
-                    .rotationEffect(.degrees(Double(i) * 120))
+                    .rotationEffect(.degrees(Double(idx) * 120))
             }
             Circle()
                 .strokeBorder(theme.reelHubBorder, lineWidth: 1)
                 .frame(width: 14, height: 14)
-            ForEach(0..<6, id: \.self) { i in
+            ForEach(0..<6, id: \.self) { idx in
                 RoundedRectangle(cornerRadius: 0.5)
                     .fill(theme.reelSpoke)
                     .frame(width: 2, height: 6)
-                    .rotationEffect(.degrees(Double(i) * 60))
+                    .rotationEffect(.degrees(Double(idx) * 60))
             }
         }
         .rotationEffect(.degrees(rotation))

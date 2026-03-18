@@ -31,8 +31,8 @@ struct LCDPanelView: View {
         if scrolling {
             let buf = scrollBuffer
             var result: [Character] = []
-            for i in 0..<columns {
-                let idx = offset + i
+            for col in 0..<columns {
+                let idx = offset + col
                 if idx < buf.count {
                     result.append(buf[idx])
                 } else {
@@ -44,9 +44,9 @@ struct LCDPanelView: View {
             // Static: pad or truncate to fit columns
             let chars = Array(text)
             var result: [Character] = []
-            for i in 0..<columns {
-                if i < chars.count {
-                    result.append(chars[i])
+            for col in 0..<columns {
+                if col < chars.count {
+                    result.append(chars[col])
                 } else {
                     result.append(" ")
                 }
@@ -62,9 +62,9 @@ struct LCDPanelView: View {
             let cellWidth = (geo.size.width - totalSpacing - horizontalPad) / CGFloat(columns)
             let fontSize = min(20, cellWidth * 1.2)
             HStack(spacing: 2) {
-                ForEach(0..<columns, id: \.self) { i in
+                ForEach(0..<columns, id: \.self) { col in
                     LCDCharacterCell(
-                        character: visibleCharacters[i],
+                        character: visibleCharacters[col],
                         activeColor: lcdGreen,
                         dimColor: lcdDim,
                         fontSize: fontSize

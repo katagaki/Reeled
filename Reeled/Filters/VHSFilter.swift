@@ -13,65 +13,12 @@ struct VHSFilter: Sendable {
     nonisolated private static let vhsShortEdge: CGFloat = 480
 
     nonisolated static func apply(to image: UIImage, settings: VHSFilterSettings.Snapshot) -> UIImage? {
-        // Normalize orientation so CIImage coordinates match the visible orientation
-        let normalizedImage = image.normalizedOrientation()
-        guard let original = CIImage(image: normalizedImage) else { return nil }
-
-        // Center-crop to 4:3, then scale down to VHS resolution (640x480)
-        let srcW = original.extent.width
-        let srcH = original.extent.height
-        let isLandscape = srcW >= srcH
-        let targetW: CGFloat = isLandscape ? vhsLongEdge : vhsShortEdge
-        let targetH: CGFloat = isLandscape ? vhsShortEdge : vhsLongEdge
-        let targetAspect = targetW / targetH
-
-        // Crop to target aspect ratio from center
-        let srcAspect = srcW / srcH
-        let cropRect: CGRect
-        if srcAspect > targetAspect {
-            // Source is wider — crop sides
-            let cropW = srcH * targetAspect
-            cropRect = CGRect(x: (srcW - cropW) / 2, y: 0, width: cropW, height: srcH)
-        } else {
-            // Source is taller — crop top/bottom
-            let cropH = srcW / targetAspect
-            cropRect = CGRect(x: 0, y: (srcH - cropH) / 2, width: srcW, height: cropH)
-        }
-        let cropped = original.cropped(to: cropRect)
-
-        // Scale to VHS dimensions
-        let scaleX = targetW / cropped.extent.width
-        let scaleY = targetH / cropped.extent.height
-        let scaled = cropped.transformed(by: CGAffineTransform(scaleX: scaleX, y: scaleY))
-        // Reset origin to (0,0) after transforms
-        let ciImage = scaled.transformed(by: CGAffineTransform(translationX: -scaled.extent.origin.x,
-                                                                y: -scaled.extent.origin.y))
-
+        guard let ciImage = cropAndScale(image: image) else { return nil }
         let extent = ciImage.extent
         let seed = UInt64.random(in: 0...UInt64.max)
         let scale = extent.width / 1000.0
 
-        var result = ciImage
-
-        result = result.applyingFilter("CIColorControls", parameters: [
-            kCIInputSaturationKey: settings.saturation,
-            kCIInputBrightnessKey: settings.brightness,
-            kCIInputContrastKey: settings.contrast
-        ])
-
-        result = result.applyingFilter("CITemperatureAndTint", parameters: [
-            "inputNeutral": CIVector(x: 5800, y: 0),
-            "inputTargetNeutral": CIVector(x: settings.warmth, y: 25)
-        ])
-
-        let chromaBleedRadius = max(1.5, 3.0 * scale)
-        let blurredForChroma = result.applyingFilter("CIMotionBlur", parameters: [
-            kCIInputRadiusKey: chromaBleedRadius,
-            kCIInputAngleKey: 0.0
-        ]).cropped(to: extent)
-        result = result.applyingFilter("CIColorBlendMode", parameters: [
-            kCIInputBackgroundImageKey: blurredForChroma
-        ]).cropped(to: extent)
+        var result = applyColorCorrection(to: ciImage, extent: extent, scale: scale, settings: settings)
 
         if settings.softness > 0 {
             result = result.applyingFilter("CIGaussianBlur", parameters: [
@@ -154,43 +101,7 @@ struct VHSFilter: Sendable {
         ])
 
         if settings.chromaticAberration > 0 {
-            let aberration = settings.chromaticAberration
-
-            let redOnly = result.applyingFilter("CIColorMatrix", parameters: [
-                "inputRVector": CIVector(x: 1, y: 0, z: 0, w: 0),
-                "inputGVector": CIVector(x: 0, y: 0, z: 0, w: 0),
-                "inputBVector": CIVector(x: 0, y: 0, z: 0, w: 0),
-                "inputAVector": CIVector(x: 0, y: 0, z: 0, w: 1)
-            ])
-            let redShifted = redOnly.transformed(
-                by: CGAffineTransform(translationX: CGFloat(aberration) * min(scale, 1.5) * 0.3, y: 0)
-            )
-
-            let greenOnly = result.applyingFilter("CIColorMatrix", parameters: [
-                "inputRVector": CIVector(x: 0, y: 0, z: 0, w: 0),
-                "inputGVector": CIVector(x: 0, y: 1, z: 0, w: 0),
-                "inputBVector": CIVector(x: 0, y: 0, z: 0, w: 0),
-                "inputAVector": CIVector(x: 0, y: 0, z: 0, w: 1)
-            ])
-
-            let blueOnly = result.applyingFilter("CIColorMatrix", parameters: [
-                "inputRVector": CIVector(x: 0, y: 0, z: 0, w: 0),
-                "inputGVector": CIVector(x: 0, y: 0, z: 0, w: 0),
-                "inputBVector": CIVector(x: 0, y: 0, z: 1, w: 0),
-                "inputAVector": CIVector(x: 0, y: 0, z: 0, w: 1)
-            ])
-            let blueShifted = blueOnly.transformed(
-                by: CGAffineTransform(translationX: CGFloat(-aberration) * min(scale, 1.5) * 0.3, y: 0)
-            )
-
-            result = redShifted
-                .applyingFilter("CIAdditionCompositing", parameters: [
-                    kCIInputBackgroundImageKey: greenOnly
-                ])
-                .applyingFilter("CIAdditionCompositing", parameters: [
-                    kCIInputBackgroundImageKey: blueShifted
-                ])
-                .cropped(to: extent)
+            result = applyChromaticAberration(to: result, extent: extent, scale: scale, amount: settings.chromaticAberration)
         }
 
         if let stamp = generateDateStamp(size: extent.size, seed: seed) {
@@ -205,7 +116,101 @@ struct VHSFilter: Sendable {
         return UIImage(cgImage: outputCGImage, scale: 1.0, orientation: .up)
     }
 
-    nonisolated private static func generateScanlines(size: CGSize, scale: CGFloat, seed: UInt64, opacity: Double) -> CIImage? {
+}
+
+// MARK: - Effect Generators
+
+private extension VHSFilter {
+
+    nonisolated static func applyColorCorrection(to image: CIImage, extent: CGRect, scale: CGFloat, settings: VHSFilterSettings.Snapshot) -> CIImage {
+        var result = image.applyingFilter("CIColorControls", parameters: [
+            kCIInputSaturationKey: settings.saturation,
+            kCIInputBrightnessKey: settings.brightness,
+            kCIInputContrastKey: settings.contrast
+        ])
+        result = result.applyingFilter("CITemperatureAndTint", parameters: [
+            "inputNeutral": CIVector(x: 5800, y: 0),
+            "inputTargetNeutral": CIVector(x: settings.warmth, y: 25)
+        ])
+        let chromaBleedRadius = max(1.5, 3.0 * scale)
+        let blurredForChroma = result.applyingFilter("CIMotionBlur", parameters: [
+            kCIInputRadiusKey: chromaBleedRadius,
+            kCIInputAngleKey: 0.0
+        ]).cropped(to: extent)
+        return result.applyingFilter("CIColorBlendMode", parameters: [
+            kCIInputBackgroundImageKey: blurredForChroma
+        ]).cropped(to: extent)
+    }
+
+    nonisolated static func cropAndScale(image: UIImage) -> CIImage? {
+        let normalizedImage = image.normalizedOrientation()
+        guard let original = CIImage(image: normalizedImage) else { return nil }
+
+        let srcW = original.extent.width
+        let srcH = original.extent.height
+        let isLandscape = srcW >= srcH
+        let targetW: CGFloat = isLandscape ? vhsLongEdge : vhsShortEdge
+        let targetH: CGFloat = isLandscape ? vhsShortEdge : vhsLongEdge
+        let targetAspect = targetW / targetH
+
+        let srcAspect = srcW / srcH
+        let cropRect: CGRect
+        if srcAspect > targetAspect {
+            let cropW = srcH * targetAspect
+            cropRect = CGRect(x: (srcW - cropW) / 2, y: 0, width: cropW, height: srcH)
+        } else {
+            let cropH = srcW / targetAspect
+            cropRect = CGRect(x: 0, y: (srcH - cropH) / 2, width: srcW, height: cropH)
+        }
+        let cropped = original.cropped(to: cropRect)
+
+        let scaleX = targetW / cropped.extent.width
+        let scaleY = targetH / cropped.extent.height
+        let scaled = cropped.transformed(by: CGAffineTransform(scaleX: scaleX, y: scaleY))
+        return scaled.transformed(by: CGAffineTransform(
+            translationX: -scaled.extent.origin.x, y: -scaled.extent.origin.y
+        ))
+    }
+
+    nonisolated static func applyChromaticAberration(to image: CIImage, extent: CGRect, scale: CGFloat, amount: Double) -> CIImage {
+        let redOnly = image.applyingFilter("CIColorMatrix", parameters: [
+            "inputRVector": CIVector(x: 1, y: 0, z: 0, w: 0),
+            "inputGVector": CIVector(x: 0, y: 0, z: 0, w: 0),
+            "inputBVector": CIVector(x: 0, y: 0, z: 0, w: 0),
+            "inputAVector": CIVector(x: 0, y: 0, z: 0, w: 1)
+        ])
+        let redShifted = redOnly.transformed(
+            by: CGAffineTransform(translationX: CGFloat(amount) * min(scale, 1.5) * 0.3, y: 0)
+        )
+
+        let greenOnly = image.applyingFilter("CIColorMatrix", parameters: [
+            "inputRVector": CIVector(x: 0, y: 0, z: 0, w: 0),
+            "inputGVector": CIVector(x: 0, y: 1, z: 0, w: 0),
+            "inputBVector": CIVector(x: 0, y: 0, z: 0, w: 0),
+            "inputAVector": CIVector(x: 0, y: 0, z: 0, w: 1)
+        ])
+
+        let blueOnly = image.applyingFilter("CIColorMatrix", parameters: [
+            "inputRVector": CIVector(x: 0, y: 0, z: 0, w: 0),
+            "inputGVector": CIVector(x: 0, y: 0, z: 0, w: 0),
+            "inputBVector": CIVector(x: 0, y: 0, z: 1, w: 0),
+            "inputAVector": CIVector(x: 0, y: 0, z: 0, w: 1)
+        ])
+        let blueShifted = blueOnly.transformed(
+            by: CGAffineTransform(translationX: CGFloat(-amount) * min(scale, 1.5) * 0.3, y: 0)
+        )
+
+        return redShifted
+            .applyingFilter("CIAdditionCompositing", parameters: [
+                kCIInputBackgroundImageKey: greenOnly
+            ])
+            .applyingFilter("CIAdditionCompositing", parameters: [
+                kCIInputBackgroundImageKey: blueShifted
+            ])
+            .cropped(to: extent)
+    }
+
+    nonisolated static func generateScanlines(size: CGSize, scale: CGFloat, seed: UInt64, opacity: Double) -> CIImage? {
         let renderer = UIGraphicsImageRenderer(size: size)
         let lineSpacing = max(4.0, 2.0 * scale)
         let gapHeight = max(1.0, lineSpacing * 0.35)
@@ -217,11 +222,11 @@ struct VHSFilter: Sendable {
             UIColor.white.setFill()
             gc.fill(CGRect(origin: .zero, size: size))
 
-            var y: CGFloat = 0
-            while y < size.height {
+            var posY: CGFloat = 0
+            while posY < size.height {
                 let gapAlpha = CGFloat(opacity) * CGFloat.random(in: 0.7...1.0, using: &rng)
                 gc.setFillColor(UIColor.black.withAlphaComponent(gapAlpha).cgColor)
-                gc.fill(CGRect(x: 0, y: y, width: size.width, height: gapHeight))
+                gc.fill(CGRect(x: 0, y: posY, width: size.width, height: gapHeight))
 
                 let phosphorAlpha = CGFloat(opacity) * 0.3
                 let tintChoice = Int.random(in: 0...2, using: &rng)
@@ -233,22 +238,22 @@ struct VHSFilter: Sendable {
                 }
                 gc.setFillColor(tintColor.cgColor)
                 let litRowHeight = lineSpacing - gapHeight
-                gc.fill(CGRect(x: 0, y: y + gapHeight, width: size.width, height: litRowHeight))
+                gc.fill(CGRect(x: 0, y: posY + gapHeight, width: size.width, height: litRowHeight))
 
                 if Bool.random(using: &rng) {
                     let wobbleAlpha = CGFloat(opacity) * CGFloat.random(in: 0.05...0.15, using: &rng)
                     gc.setFillColor(UIColor.white.withAlphaComponent(wobbleAlpha).cgColor)
-                    gc.fill(CGRect(x: 0, y: y + gapHeight, width: size.width, height: litRowHeight))
+                    gc.fill(CGRect(x: 0, y: posY + gapHeight, width: size.width, height: litRowHeight))
                 }
 
-                y += lineSpacing
+                posY += lineSpacing
             }
         }
         guard let cgImage = image.cgImage else { return nil }
         return CIImage(cgImage: cgImage)
     }
 
-    nonisolated private static func generateNoiseLines(size: CGSize, scale: CGFloat, seed: UInt64, lineCount: Int) -> CIImage? {
+    nonisolated static func generateNoiseLines(size: CGSize, scale: CGFloat, seed: UInt64, lineCount: Int) -> CIImage? {
         guard lineCount > 0 else { return nil }
         var rng = SeededRNG(seed: seed)
         let renderer = UIGraphicsImageRenderer(size: size)
@@ -259,7 +264,7 @@ struct VHSFilter: Sendable {
             let gc = ctx.cgContext
 
             for _ in 0..<lineCount {
-                let y = CGFloat.random(in: 0...size.height, using: &rng)
+                let lineY = CGFloat.random(in: 0...size.height, using: &rng)
                 let baseHeight = CGFloat.random(in: 3...8, using: &rng) * scaledUnit
                 let alpha = CGFloat.random(in: 0.05...0.14, using: &rng)
 
@@ -267,7 +272,7 @@ struct VHSFilter: Sendable {
                 for _ in 0..<blobCount {
                     let blobX = CGFloat.random(in: -size.width * 0.1...0, using: &rng)
                     let blobWidth = CGFloat.random(in: size.width * 0.5...size.width * 1.2, using: &rng)
-                    let blobY = y + CGFloat.random(in: -baseHeight * 0.3...baseHeight * 0.3, using: &rng)
+                    let blobY = lineY + CGFloat.random(in: -baseHeight * 0.3...baseHeight * 0.3, using: &rng)
                     let blobH = baseHeight * CGFloat.random(in: 0.5...1.5, using: &rng)
                     let blobAlpha = alpha * CGFloat.random(in: 0.4...1.0, using: &rng)
 
@@ -283,12 +288,12 @@ struct VHSFilter: Sendable {
 
             let glitchCount = Int.random(in: 1...2, using: &rng)
             for _ in 0..<glitchCount {
-                let y = CGFloat.random(in: 0...size.height, using: &rng)
+                let glitchY = CGFloat.random(in: 0...size.height, using: &rng)
                 let height = CGFloat.random(in: 8...18, using: &rng) * scaledUnit
                 let alpha = CGFloat.random(in: 0.03...0.08, using: &rng)
 
                 gc.setFillColor(UIColor.white.withAlphaComponent(alpha).cgColor)
-                let rect = CGRect(x: 0, y: y, width: size.width, height: height)
+                let rect = CGRect(x: 0, y: glitchY, width: size.width, height: height)
                 let path = UIBezierPath(roundedRect: rect, cornerRadius: height * 0.3)
                 gc.addPath(path.cgPath)
                 gc.fillPath()
@@ -304,7 +309,7 @@ struct VHSFilter: Sendable {
         return CIImage(cgImage: cgImage)
     }
 
-    nonisolated private static func generateHorizontalDisplacement(base: CIImage, extent: CGRect, scale: CGFloat, seed: UInt64, maxShift: Double) -> CIImage? {
+    nonisolated static func generateHorizontalDisplacement(base: CIImage, extent: CGRect, scale: CGFloat, seed: UInt64, maxShift: Double) -> CIImage? {
         var rng = SeededRNG(seed: seed &+ 12345)
         let bandCount = Int.random(in: 2...5, using: &rng)
 
@@ -327,7 +332,7 @@ struct VHSFilter: Sendable {
         return result
     }
 
-    nonisolated private static func generateGrain(size: CGSize, intensity: Double, seed: UInt64) -> CIImage? {
+    nonisolated static func generateGrain(size: CGSize, intensity: Double, seed: UInt64) -> CIImage? {
         let extent = CGRect(origin: .zero, size: size)
         let scale = size.width / 1000.0
 
@@ -400,27 +405,27 @@ struct VHSFilter: Sendable {
 
             let bandCount = Int.random(in: 4...10, using: &bandRng)
             for _ in 0..<bandCount {
-                let y = CGFloat.random(in: 0...size.height, using: &bandRng)
+                let bandY = CGFloat.random(in: 0...size.height, using: &bandRng)
                 let height = CGFloat.random(in: 8...30, using: &bandRng) * grainScale
                 let alpha = CGFloat(intensity) * CGFloat.random(in: 0.06...0.15, using: &bandRng)
 
-                let r = CGFloat.random(in: 0.3...0.45, using: &bandRng)
-                let g = CGFloat.random(in: 0.3...0.4, using: &bandRng)
-                let b = CGFloat.random(in: 0.45...0.6, using: &bandRng)
-                gc.setFillColor(UIColor(red: r, green: g, blue: b, alpha: alpha).cgColor)
-                gc.fill(CGRect(x: 0, y: y, width: size.width, height: height))
+                let red = CGFloat.random(in: 0.3...0.45, using: &bandRng)
+                let grn = CGFloat.random(in: 0.3...0.4, using: &bandRng)
+                let blu = CGFloat.random(in: 0.45...0.6, using: &bandRng)
+                gc.setFillColor(UIColor(red: red, green: grn, blue: blu, alpha: alpha).cgColor)
+                gc.fill(CGRect(x: 0, y: bandY, width: size.width, height: height))
             }
 
             let dropoutCount = Int.random(in: 0...3, using: &bandRng)
             for _ in 0..<dropoutCount {
-                let y = CGFloat.random(in: 0...size.height, using: &bandRng)
+                let dropY = CGFloat.random(in: 0...size.height, using: &bandRng)
                 let height = CGFloat.random(in: 1...2, using: &bandRng) * grainScale
-                let x = CGFloat.random(in: 0...size.width * 0.5, using: &bandRng)
+                let dropX = CGFloat.random(in: 0...size.width * 0.5, using: &bandRng)
                 let width = CGFloat.random(in: size.width * 0.05...size.width * 0.4, using: &bandRng)
                 let alpha = CGFloat(intensity) * CGFloat.random(in: 0.15...0.35, using: &bandRng)
 
                 gc.setFillColor(UIColor(white: 0.8, alpha: alpha).cgColor)
-                gc.fill(CGRect(x: x, y: y, width: width, height: height))
+                gc.fill(CGRect(x: dropX, y: dropY, width: width, height: height))
             }
         }
         guard let bandCGImage = bandImage.cgImage else { return nil }
@@ -438,7 +443,7 @@ struct VHSFilter: Sendable {
         return combined
     }
 
-    nonisolated private static func applyMicroDistortion(to image: CIImage, extent: CGRect, scale: CGFloat, seed: UInt64, intensity: Double) -> CIImage {
+    nonisolated static func applyMicroDistortion(to image: CIImage, extent: CGRect, scale: CGFloat, seed: UInt64, intensity: Double) -> CIImage {
         // Grain-level horizontal distortion — individual noise grains each
         // shift nearby pixels horizontally, giving a gritty, degraded look.
         guard let noise = CIFilter(name: "CIRandomGenerator")?.outputImage else { return image }
@@ -477,7 +482,7 @@ struct VHSFilter: Sendable {
         return distorted
     }
 
-    nonisolated private static func generateDateStamp(size: CGSize, seed: UInt64) -> CIImage? {
+    nonisolated static func generateDateStamp(size: CGSize, seed: UInt64) -> CIImage? {
         var rng = SeededRNG(seed: seed)
 
         let year = Int.random(in: 1...31, using: &rng)

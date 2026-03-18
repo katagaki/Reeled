@@ -300,7 +300,10 @@ struct Theme {
                 : Color.black.opacity(0.4)
     }
 
-    // MARK: - EmptyState VHS tape
+}
+
+// MARK: - EmptyState VHS tape & reel colors
+extension Theme {
     // In light mode: white/clean shell, but tape area stays dark
 
     var tapeShellTop: Color {

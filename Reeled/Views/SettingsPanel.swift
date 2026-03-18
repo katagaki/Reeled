@@ -133,8 +133,8 @@ struct VintageSlider: View {
                                         onDragChanged?(true)
                                         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                                     }
-                                    let x = gesture.location.x - thumbSize / 2
-                                    let newFraction = max(0, min(1, x / (width - thumbSize)))
+                                    let posX = gesture.location.x - thumbSize / 2
+                                    let newFraction = max(0, min(1, posX / (width - thumbSize)))
                                     let newValue = range.lowerBound + newFraction * (range.upperBound - range.lowerBound)
                                     value = newValue
 

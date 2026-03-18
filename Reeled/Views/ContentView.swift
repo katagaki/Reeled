@@ -326,7 +326,13 @@ struct ContentView: View {
         )
     }
 
-    private func loadAndProcess(item: PhotosPickerItem) {
+}
+
+// MARK: - Actions
+
+private extension ContentView {
+
+    func loadAndProcess(item: PhotosPickerItem) {
         isProcessing = true
         if originalImage == nil { processedImage = nil }
 
@@ -426,7 +432,7 @@ struct ContentView: View {
         }
     }
 
-    private func loadVideoFile(from item: PhotosPickerItem) async throws -> URL {
+    func loadVideoFile(from item: PhotosPickerItem) async throws -> URL {
         let tempDir = FileManager.default.temporaryDirectory
         let tempURL = tempDir.appendingPathComponent(UUID().uuidString).appendingPathExtension("mov")
 
@@ -475,7 +481,7 @@ struct ContentView: View {
         }
     }
 
-    private func reprocess() {
+    func reprocess() {
         guard let originalImage, !isProcessing else { return }
         isProcessing = true
         let snap = settings.snapshot()
@@ -490,7 +496,7 @@ struct ContentView: View {
         }
     }
 
-    private func printSettings(_ snap: VHSFilterSettings.Snapshot) {
+    func printSettings(_ snap: VHSFilterSettings.Snapshot) {
         #if DEBUG
         debugPrint("""
         [VHS Settings] \
@@ -512,9 +518,11 @@ struct ContentView: View {
         #endif
     }
 
-    private func exportVideo() {
+    func exportVideo() {
         guard let originalImage, !isExporting else {
+            #if DEBUG
             debugPrint("[ContentView] exportVideo guard failed: originalImage=\(originalImage != nil), isExporting=\(isExporting)")
+            #endif
             return
         }
         isExporting = true
@@ -523,7 +531,9 @@ struct ContentView: View {
         let snap = settings.snapshot()
         let videoURL = sourceVideoURL
 
+        #if DEBUG
         debugPrint("[ContentView] exportVideo started, hasVideoURL=\(videoURL != nil)")
+        #endif
 
         // Pause video preview during export
         videoPreviewEngine?.pause()
@@ -532,7 +542,9 @@ struct ContentView: View {
             do {
                 let url: URL
                 if let videoURL {
+                    #if DEBUG
                     debugPrint("[ContentView] Calling exportFromVideo with URL: \(videoURL.lastPathComponent)")
+                    #endif
                     let asset = AVURLAsset(url: videoURL)
                     url = try await VideoExporter.exportFromVideo(
                         asset: asset,
@@ -543,7 +555,9 @@ struct ContentView: View {
                         }
                     }
                 } else {
+                    #if DEBUG
                     debugPrint("[ContentView] Calling export (image mode)")
+                    #endif
                     url = try await VideoExporter.export(
                         image: originalImage,
                         settings: snap
@@ -554,11 +568,15 @@ struct ContentView: View {
                     }
                 }
 
+                #if DEBUG
                 debugPrint("[ContentView] Export returned URL: \(url.lastPathComponent), saving to photo library...")
+                #endif
                 try await PHPhotoLibrary.shared().performChanges {
                     PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: url)
                 }
+                #if DEBUG
                 debugPrint("[ContentView] Saved to photo library successfully")
+                #endif
 
                 try? FileManager.default.removeItem(at: url)
 
@@ -567,10 +585,14 @@ struct ContentView: View {
                     UIApplication.shared.isIdleTimerDisabled = false
                     videoPreviewEngine?.play()
                     showDoneIndicator()
+                    #if DEBUG
                     debugPrint("[ContentView] Export flow complete, UI reset")
+                    #endif
                 }
             } catch {
+                #if DEBUG
                 debugPrint("[ContentView] Export error: \(error)")
+                #endif
                 await MainActor.run {
                     isExporting = false
                     UIApplication.shared.isIdleTimerDisabled = false
@@ -582,7 +604,7 @@ struct ContentView: View {
         }
     }
 
-    private func savePhoto() {
+    func savePhoto() {
         guard let imageToSave = processedImage ?? videoPreviewEngine?.currentFrame else { return }
         let saver = ImageSaver {
             showDoneIndicator()
@@ -593,7 +615,7 @@ struct ContentView: View {
         saver.save(image: imageToSave)
     }
 
-    private func showDoneIndicator() {
+    func showDoneIndicator() {
         showingDone = true
         Task {
             try? await Task.sleep(for: .seconds(1))
