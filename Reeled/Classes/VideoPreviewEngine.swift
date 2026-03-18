@@ -27,7 +27,7 @@ final class VideoPreviewEngine: @unchecked Sendable {
             let ext = try await VideoFrameExtractor(asset: asset)
             self.extractor = ext
             // Show first filtered frame immediately
-            if let first = ext.frame(at: 0) {
+            if let first = await ext.frame(at: 0) {
                 let snap = settings
                 let filtered = await Task.detached {
                     VHSFilter.apply(to: first, settings: snap)
@@ -100,14 +100,14 @@ final class VideoPreviewEngine: @unchecked Sendable {
         isRendering = true
         let snap = settings
 
-        renderQueue.async { [weak self] in
+        Task.detached { [weak self] in
             guard let self else { return }
-            guard let sourceFrame = extractor.frame(at: frameIndex) else {
-                DispatchQueue.main.async { self.isRendering = false }
+            guard let sourceFrame = await extractor.frame(at: frameIndex) else {
+                await MainActor.run { self.isRendering = false }
                 return
             }
             let filtered = VHSFilter.apply(to: sourceFrame, settings: snap)
-            DispatchQueue.main.async {
+            await MainActor.run {
                 self.currentFrame = filtered
                 self.isRendering = false
             }

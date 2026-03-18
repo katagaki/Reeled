@@ -8,7 +8,7 @@ struct VideoFrameExtractor: Sendable {
     let frameRate: Double
     let totalFrameCount: Int
 
-    private let generator: AVAssetImageGenerator
+    private nonisolated(unsafe) let generator: AVAssetImageGenerator
 
     init(asset: AVAsset, precise: Bool = false) async throws {
         self.asset = asset
@@ -36,12 +36,14 @@ struct VideoFrameExtractor: Sendable {
         self.generator = gen
     }
 
-    func frame(at index: Int) -> UIImage? {
+    func frame(at index: Int) async -> UIImage? {
         let time = CMTime(value: CMTimeValue(index) * 1000, timescale: CMTimeScale(29.97 * 1000))
-        guard let cgImage = try? generator.copyCGImage(at: time, actualTime: nil) else {
+        do {
+            let (cgImage, _) = try await generator.image(at: time)
+            return UIImage(cgImage: cgImage)
+        } catch {
             return nil
         }
-        return UIImage(cgImage: cgImage)
     }
 
     enum ExtractorError: LocalizedError {

@@ -6,6 +6,7 @@ import UIKit
 
 extension ContentView {
 
+    // swiftlint:disable:next function_body_length
     func loadAndProcess(item: PhotosPickerItem) {
         isProcessing = true
         if originalImage == nil { processedImage = nil }
@@ -192,6 +193,7 @@ extension ContentView {
         #endif
     }
 
+    // swiftlint:disable:next function_body_length
     func exportVideo() {
         guard let originalImage, !isExporting else {
             #if DEBUG

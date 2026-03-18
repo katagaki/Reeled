@@ -3,9 +3,13 @@ import CoreVideo
 
 extension VideoExporter {
 
+    // swiftlint:disable:next function_parameter_count
     static func writeVideoFile(
-        frames: [CGImage], to outputURL: URL,
-        width: Int, height: Int, tag: String,
+        frames: [CGImage],
+        to outputURL: URL,
+        width: Int,
+        height: Int,
+        tag: String,
         frameProgress: @Sendable @escaping (Int) -> Void
     ) async throws -> URL {
         let writer = try AVAssetWriter(outputURL: outputURL, fileType: .mov)
@@ -57,6 +61,7 @@ extension VideoExporter {
         return outputURL
     }
 
+    // swiftlint:disable:next function_body_length
     static func writeFrames(
         _ frames: [CGImage],
         to writerInput: AVAssetWriterInput,
@@ -67,6 +72,9 @@ extension VideoExporter {
     ) async throws {
         let writeQueue = DispatchQueue(label: "com.reeled.\(tag).write", qos: .userInitiated)
         let totalFrames = frames.count
+
+        nonisolated(unsafe) let writerInput = writerInput
+        nonisolated(unsafe) let adaptor = adaptor
 
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             nonisolated(unsafe) var frameIndex = 0

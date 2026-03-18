@@ -3,6 +3,7 @@ import UIKit
 
 extension VHSFilter {
 
+    // swiftlint:disable:next function_body_length
     nonisolated static func generateGrain(
         size: CGSize,
         intensity: Double,

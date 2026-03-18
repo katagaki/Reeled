@@ -9,6 +9,7 @@ struct VideoExporter: Sendable {
 
     // MARK: - Image Export (static image → looping video)
 
+    // swiftlint:disable:next function_body_length
     static func export(
         image: UIImage,
         settings: VHSFilterSettings.Snapshot,

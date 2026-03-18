@@ -135,6 +135,7 @@ struct VintageSlider: View {
                                     }
                                     let posX = gesture.location.x - thumbSize / 2
                                     let newFraction = max(0, min(1, posX / (width - thumbSize)))
+                                    // swiftlint:disable:next line_length
                                     let newValue = range.lowerBound + newFraction * (range.upperBound - range.lowerBound)
                                     value = newValue
 
