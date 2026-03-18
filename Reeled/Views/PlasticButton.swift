@@ -22,13 +22,14 @@ struct PlasticButton: View {
     var body: some View {
         VStack(spacing: 4) {
             Image(systemName: systemImage)
-                .font(.system(size: 20, weight: .medium))
+                .font(.system(size: 18, weight: .medium))
                 .foregroundStyle(isPressed ? accentColor.opacity(0.6) : accentColor)
+                .frame(width: 24, height: 20)
             Text(label)
-                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .font(.system(size: 10, weight: .semibold))
                 .foregroundStyle(theme.buttonLabelColor)
         }
-        .frame(width: 64, height: 52)
+        .frame(minWidth: 52, maxWidth: 64, minHeight: 52, maxHeight: 52)
         .background(
             ZStack {
                 RoundedRectangle(cornerRadius: 8)

@@ -331,7 +331,14 @@ struct VHSFilter: Sendable {
 
         guard let randomNoise = CIFilter(name: "CIRandomGenerator")?.outputImage else { return nil }
 
-        let noiseImage = randomNoise.cropped(to: extent)
+        // Offset into the infinite noise texture using the seed so each
+        // call samples a different region, producing unique grain.
+        var rng = SeededRNG(seed: seed &+ 33333)
+        let offsetX = CGFloat(rng.next() % 10000)
+        let offsetY = CGFloat(rng.next() % 10000)
+        let noiseImage = randomNoise
+            .transformed(by: CGAffineTransform(translationX: offsetX, y: offsetY))
+            .cropped(to: extent)
 
         let lumaNoise = noiseImage.applyingFilter("CIColorControls", parameters: [
             kCIInputSaturationKey: 0.0,
@@ -380,7 +387,7 @@ struct VHSFilter: Sendable {
             "inputBiasVector": CIVector(x: 0, y: 0, z: 0, w: 0)
         ])
 
-        var rng = SeededRNG(seed: seed &+ 77777)
+        var bandRng = SeededRNG(seed: seed &+ 77777)
         let renderer = UIGraphicsImageRenderer(size: size)
         let grainScale = max(1.0, scale * 0.6)
 
@@ -389,26 +396,26 @@ struct VHSFilter: Sendable {
             ctx.fill(CGRect(origin: .zero, size: size))
             let gc = ctx.cgContext
 
-            let bandCount = Int.random(in: 4...10, using: &rng)
+            let bandCount = Int.random(in: 4...10, using: &bandRng)
             for _ in 0..<bandCount {
-                let y = CGFloat.random(in: 0...size.height, using: &rng)
-                let height = CGFloat.random(in: 8...30, using: &rng) * grainScale
-                let alpha = CGFloat(intensity) * CGFloat.random(in: 0.06...0.15, using: &rng)
+                let y = CGFloat.random(in: 0...size.height, using: &bandRng)
+                let height = CGFloat.random(in: 8...30, using: &bandRng) * grainScale
+                let alpha = CGFloat(intensity) * CGFloat.random(in: 0.06...0.15, using: &bandRng)
 
-                let r = CGFloat.random(in: 0.3...0.45, using: &rng)
-                let g = CGFloat.random(in: 0.3...0.4, using: &rng)
-                let b = CGFloat.random(in: 0.45...0.6, using: &rng)
+                let r = CGFloat.random(in: 0.3...0.45, using: &bandRng)
+                let g = CGFloat.random(in: 0.3...0.4, using: &bandRng)
+                let b = CGFloat.random(in: 0.45...0.6, using: &bandRng)
                 gc.setFillColor(UIColor(red: r, green: g, blue: b, alpha: alpha).cgColor)
                 gc.fill(CGRect(x: 0, y: y, width: size.width, height: height))
             }
 
-            let dropoutCount = Int.random(in: 0...3, using: &rng)
+            let dropoutCount = Int.random(in: 0...3, using: &bandRng)
             for _ in 0..<dropoutCount {
-                let y = CGFloat.random(in: 0...size.height, using: &rng)
-                let height = CGFloat.random(in: 1...2, using: &rng) * grainScale
-                let x = CGFloat.random(in: 0...size.width * 0.5, using: &rng)
-                let width = CGFloat.random(in: size.width * 0.05...size.width * 0.4, using: &rng)
-                let alpha = CGFloat(intensity) * CGFloat.random(in: 0.15...0.35, using: &rng)
+                let y = CGFloat.random(in: 0...size.height, using: &bandRng)
+                let height = CGFloat.random(in: 1...2, using: &bandRng) * grainScale
+                let x = CGFloat.random(in: 0...size.width * 0.5, using: &bandRng)
+                let width = CGFloat.random(in: size.width * 0.05...size.width * 0.4, using: &bandRng)
+                let alpha = CGFloat(intensity) * CGFloat.random(in: 0.15...0.35, using: &bandRng)
 
                 gc.setFillColor(UIColor(white: 0.8, alpha: alpha).cgColor)
                 gc.fill(CGRect(x: x, y: y, width: width, height: height))
@@ -434,7 +441,15 @@ struct VHSFilter: Sendable {
         // shift nearby pixels horizontally, giving a gritty, degraded look.
         guard let noise = CIFilter(name: "CIRandomGenerator")?.outputImage else { return image }
 
-        let greyNoise = noise.cropped(to: extent)
+        // Offset into the infinite noise texture using the seed so each
+        // call samples a different region, producing unique distortion.
+        var rng = SeededRNG(seed: seed &+ 55555)
+        let offsetX = CGFloat(rng.next() % 10000)
+        let offsetY = CGFloat(rng.next() % 10000)
+        let shiftedNoise = noise
+            .transformed(by: CGAffineTransform(translationX: offsetX, y: offsetY))
+
+        let greyNoise = shiftedNoise.cropped(to: extent)
             .applyingFilter("CIColorControls", parameters: [
                 kCIInputSaturationKey: 0.0,
                 kCIInputBrightnessKey: -0.5,
@@ -483,7 +498,7 @@ struct VHSFilter: Sendable {
             ctx.fill(CGRect(origin: .zero, size: size))
 
             let fontSize: CGFloat = max(size.width * 0.035, 14)
-            let font = UIFont(name: "Courier", size: fontSize) ?? UIFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
+            let font = UIFont(name: "VCR-JP", size: fontSize) ?? UIFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
 
             let paragraphStyle = NSMutableParagraphStyle()
             paragraphStyle.alignment = .left
@@ -509,7 +524,7 @@ struct VHSFilter: Sendable {
             dateString.draw(at: CGPoint(x: xPos, y: yPos), withAttributes: attributes)
 
             let playString = "PLAY  ▶"
-            let playFont = UIFont(name: "Courier-Bold", size: fontSize * 0.9) ?? UIFont.monospacedSystemFont(ofSize: fontSize * 0.9, weight: .bold)
+            let playFont = UIFont(name: "VCR-JP", size: fontSize * 0.9) ?? UIFont.monospacedSystemFont(ofSize: fontSize * 0.9, weight: .bold)
             let playAttributes: [NSAttributedString.Key: Any] = [
                 .font: playFont,
                 .foregroundColor: UIColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 0.85),

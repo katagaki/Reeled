@@ -11,7 +11,7 @@ final class VHSFilterSettings: @unchecked Sendable {
     var softness: Double = 1.1 { didSet { version += 1 } }
     var scanlineOpacity: Double = 0.17 { didSet { version += 1 } }
     var noiseLines: Double = 0.85 { didSet { version += 1 } }
-    var displacement: Double = 6.6 { didSet { version += 1 } }
+    var displacement: Double = 1.6 { didSet { version += 1 } }
     var grain: Double = 0.1 { didSet { version += 1 } }
     var microDistortion: Double = 0.6 { didSet { version += 1 } }
     var vignette: Double = 1.0 { didSet { version += 1 } }
@@ -31,7 +31,7 @@ final class VHSFilterSettings: @unchecked Sendable {
         softness = 1.1
         scanlineOpacity = 0.05
         noiseLines = 0.85
-        displacement = 6.6
+        displacement = 1.6
         grain = 0.1
         microDistortion = 0.6
         vignette = 1.0

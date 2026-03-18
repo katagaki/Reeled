@@ -24,7 +24,7 @@ struct VintageSlider: View {
     var body: some View {
         VStack(spacing: 6) {
             Text(label)
-                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                .font(.custom("VCR-JP", size: 11))
                 .foregroundStyle(theme.sliderLabel)
                 .frame(maxWidth: .infinity, alignment: .leading)
 

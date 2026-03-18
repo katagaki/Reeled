@@ -99,11 +99,11 @@ struct EmptyStateView: View {
                             VStack(spacing: 3) {
                                 HStack {
                                     Text("VHS")
-                                        .font(.system(size: 8, weight: .heavy, design: .monospaced))
+                                        .font(.system(size: 8, weight: .heavy))
                                         .foregroundStyle(theme.tapeLabelTitle)
                                     Spacer()
                                     Text("R-33L-D  Hi-Fi STEREO")
-                                        .font(.system(size: 7, weight: .bold, design: .monospaced))
+                                        .font(.system(size: 7, weight: .bold))
                                         .foregroundStyle(theme.tapeLabelSubtitle)
                                 }
                                 .padding(.horizontal, 8)
@@ -184,13 +184,8 @@ struct EmptyStateView: View {
                 .frame(width: 280, height: 175)
             }
 
-            Text(String(localized: "EmptyState.SelectPhoto"))
-                .font(.system(size: 16, weight: .medium, design: .monospaced))
-                .foregroundStyle(theme.emptyStateText)
-
             Link(destination: URL(string: "https://github.com/katagaki/Reeled")!) {
                 Label("katagaki/Reeled", systemImage: "chevron.left.forwardslash.chevron.right")
-                    .font(.system(size: 13, weight: .medium, design: .monospaced))
                     .foregroundStyle(theme.emptyStateText.opacity(0.6))
             }
 

@@ -1,3 +1,4 @@
+import Photos
 import PhotosUI
 import SwiftUI
 import UIKit
@@ -9,11 +10,14 @@ struct ContentView: View {
     @State private var originalImage: UIImage?
     @State private var processedImage: UIImage?
     @State private var isProcessing = false
-    @State private var showingSaveSuccess = false
     @State private var showingSaveError = false
     @State private var saveErrorMessage = ""
     @State private var settings = VHSFilterSettings()
     @State private var debounceTask: Task<Void, Never>?
+    @State private var originalFilename: String?
+    @State private var isExporting = false
+    @State private var exportProgress: Double = 0
+    @State private var showingDone = false
 
     var body: some View {
         ZStack {
@@ -65,25 +69,36 @@ struct ContentView: View {
                     let imageHeight = geo.size.height * 0.5
                     let slidersHeight = geo.size.height * 0.5
 
-                    VStack(spacing: 0) {
-                        Group {
-                            if let processedImage {
-                                ProcessedImageView(image: processedImage)
-                            } else if isProcessing {
-                                processingView
-                            } else {
-                                EmptyStateView()
+                    if processedImage == nil && !isProcessing && !isExporting {
+                        EmptyStateView()
+                    } else {
+                        VStack(spacing: 0) {
+                            Group {
+                                if let processedImage {
+                                    ProcessedImageView(image: processedImage)
+                                } else {
+                                    Spacer()
+                                }
                             }
-                        }
-                        .frame(height: imageHeight)
-                        .clipped()
+                            .frame(height: imageHeight)
+                            .clipped()
 
-                        ScrollView {
-                            if processedImage != nil || isProcessing {
-                                inlineSettingsPanel
+                            if isExporting {
+                                VStack(spacing: 0) {
+                                    Spacer()
+                                    ExportingTapeView(progress: exportProgress, filename: originalFilename)
+                                    Spacer()
+                                }
+                                .frame(height: slidersHeight)
+                            } else {
+                                ScrollView {
+                                    if processedImage != nil || isProcessing {
+                                        inlineSettingsPanel
+                                    }
+                                }
+                                .frame(height: slidersHeight)
                             }
                         }
-                        .frame(height: slidersHeight)
                     }
                 }
 
@@ -107,28 +122,10 @@ struct ContentView: View {
                 reprocess()
             }
         }
-        .alert(String(localized: "Alert.SaveSuccess.Title"), isPresented: $showingSaveSuccess) {
-            Button("OK") {}
-        } message: {
-            Text(String(localized: "Alert.SaveSuccess.Message"))
-        }
         .alert(String(localized: "Alert.Error.Title"), isPresented: $showingSaveError) {
             Button("OK") {}
         } message: {
             Text(saveErrorMessage)
-        }
-    }
-
-    private var processingView: some View {
-        VStack(spacing: 16) {
-            Spacer()
-            ProgressView()
-                .scaleEffect(1.5)
-                .tint(theme.processingTint)
-            Text(String(localized: "Processing.Dubbing"))
-                .font(.system(size: 14, weight: .medium, design: .monospaced))
-                .foregroundStyle(theme.processingTint)
-            Spacer()
         }
     }
 
@@ -167,7 +164,7 @@ struct ContentView: View {
     private func settingsGroup(_ title: String, @ViewBuilder content: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(title)
-                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                .font(.custom("VCR-JP", size: 11))
                 .foregroundStyle(theme.settingsGroupTitle)
                 .padding(.leading, 4)
 
@@ -197,6 +194,31 @@ struct ContentView: View {
         .padding(.horizontal, 16)
     }
 
+    private var lcdText: String {
+        if showingDone {
+            return "SAVED"
+        } else if isExporting {
+            let pct = Int(exportProgress * 100)
+            let suffix = "\(pct)%"
+            let prefix = "EXPORTING"
+            let spaces = String(repeating: " ", count: max(1, 16 - prefix.count - suffix.count))
+            return "\(prefix)\(spaces)\(suffix)"
+        } else if isProcessing {
+            return "DUBBING"
+        } else if originalImage == nil {
+            return "INSERT PHOTO TO BEGIN"
+        } else {
+            return "READY"
+        }
+    }
+
+    private var lcdScrolling: Bool {
+        if showingDone || isExporting || isProcessing {
+            return false
+        }
+        return originalImage == nil
+    }
+
     private var controlBar: some View {
         VStack(spacing: 0) {
             Rectangle()
@@ -206,13 +228,16 @@ struct ContentView: View {
                 .fill(theme.controlBarBottomEdge)
                 .frame(height: 0.5)
 
-            HStack(spacing: 0) {
+            LCDPanelView(text: lcdText, scrolling: lcdScrolling)
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, 4)
+
+            HStack(spacing: 8) {
                 PhotosPicker(selection: $selectedItem, matching: .images) {
                     Text("")
                 }
                 .buttonStyle(PlasticButtonStyle(label: String(localized: "Button.Insert"), systemImage: "eject.fill", tint: .blue))
-
-                Spacer()
 
                 Button {
                     settings.resetToDefaults()
@@ -223,29 +248,33 @@ struct ContentView: View {
                 .disabled(originalImage == nil)
                 .opacity(originalImage == nil ? 0.4 : 1.0)
 
-                Spacer()
-
                 Button {
                     reprocess()
                 } label: {
                     Text("")
                 }
-                .buttonStyle(PlasticButtonStyle(label: String(localized: "Button.Rewind"), systemImage: "backward.end.fill", tint: .green))
+                .buttonStyle(PlasticButtonStyle(label: String(localized: "Button.Rewind"), systemImage: "backward.end.fill", tint: .gray))
                 .disabled(originalImage == nil || isProcessing)
                 .opacity(originalImage == nil ? 0.4 : 1.0)
 
-                Spacer()
+                Button {
+                    exportVideo()
+                } label: {
+                    Text("")
+                }
+                .buttonStyle(PlasticButtonStyle(label: String(localized: "Button.Video"), systemImage: "film.stack", tint: .orange))
+                .disabled(originalImage == nil || isProcessing || isExporting)
+                .opacity(originalImage == nil ? 0.4 : 1.0)
 
                 Button {
                     savePhoto()
                 } label: {
                     Text("")
                 }
-                .buttonStyle(PlasticButtonStyle(label: String(localized: "Button.Save"), systemImage: "printer.filled.and.paper.inverse", tint: .orange))
+                .buttonStyle(PlasticButtonStyle(label: String(localized: "Button.Image"), systemImage: "photo", tint: .orange))
                 .disabled(processedImage == nil || isProcessing)
                 .opacity(processedImage == nil ? 0.4 : 1.0)
             }
-            .padding(.horizontal, 24)
             .padding(.vertical, 14)
         }
         .background(
@@ -287,7 +316,18 @@ struct ContentView: View {
                 return
             }
 
+            // Extract original filename from PHAsset, or fall back to content type
+            var filename: String?
+            if let assetID = item.itemIdentifier {
+                let results = PHAsset.fetchAssets(withLocalIdentifiers: [assetID], options: nil)
+                if let asset = results.firstObject {
+                    let resources = PHAssetResource.assetResources(for: asset)
+                    filename = resources.first?.originalFilename
+                }
+            }
+
             await MainActor.run {
+                originalFilename = filename
                 originalImage = uiImage
             }
 
@@ -337,18 +377,59 @@ struct ContentView: View {
         #endif
     }
 
+    private func exportVideo() {
+        guard let originalImage, !isExporting else { return }
+        isExporting = true
+        exportProgress = 0
+        let snap = settings.snapshot()
+
+        Task.detached {
+            do {
+                let url = try await VideoExporter.export(
+                    image: originalImage,
+                    settings: snap
+                ) { value in
+                    Task { @MainActor in
+                        exportProgress = value
+                    }
+                }
+
+                try await PHPhotoLibrary.shared().performChanges {
+                    PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: url)
+                }
+
+                try? FileManager.default.removeItem(at: url)
+
+                await MainActor.run {
+                    isExporting = false
+                    showDoneIndicator()
+                }
+            } catch {
+                await MainActor.run {
+                    isExporting = false
+                    saveErrorMessage = error.localizedDescription
+                    showingSaveError = true
+                }
+            }
+        }
+    }
+
     private func savePhoto() {
         guard let processedImage else { return }
         let saver = ImageSaver {
-            showingSaveSuccess = true
+            showDoneIndicator()
         } onError: { error in
             saveErrorMessage = error.localizedDescription
             showingSaveError = true
         }
         saver.save(image: processedImage)
     }
-}
 
-#Preview {
-    ContentView()
+    private func showDoneIndicator() {
+        showingDone = true
+        Task {
+            try? await Task.sleep(for: .seconds(1))
+            showingDone = false
+        }
+    }
 }
