@@ -194,8 +194,8 @@ extension VideoExporter {
         duration: Double,
         windowDuration: Double = 0.1
     ) -> AVAudioMix {
-        let maxVolume: Float = 1.0
-        let minVolume: Float = 0.08
+        let maxVolume: Float = 0.5
+        let minVolume: Float = 0.04
 
         let params = AVMutableAudioMixInputParameters(track: vhsTrack)
 
