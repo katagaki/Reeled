@@ -70,11 +70,7 @@ extension ContentView {
                 .disabled(originalImage == nil || isExporting)
 
                 Button {
-                    if videoPreviewEngine != nil {
-                        videoPreviewEngine?.restart()
-                    } else {
-                        reprocess()
-                    }
+                    videoPreviewEngine?.restart()
                 } label: {
                     Text("")
                 }
@@ -113,7 +109,7 @@ extension ContentView {
                         tint: .orange
                     )
                 )
-                .disabled((processedImage == nil && videoPreviewEngine == nil) || sourceVideoAsset != nil || isProcessing || isExporting)
+                .disabled(videoPreviewEngine == nil || sourceVideoAsset != nil || isProcessing || isExporting)
             }
             .padding(.vertical, 14)
         }

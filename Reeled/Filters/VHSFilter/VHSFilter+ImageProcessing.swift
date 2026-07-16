@@ -3,6 +3,13 @@ import UIKit
 
 extension VHSFilter {
 
+    /// Pinned to 1x for pixel-exact overlays; the default renderer uses device scale.
+    nonisolated static func pixelRenderer(size: CGSize) -> UIGraphicsImageRenderer {
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        return UIGraphicsImageRenderer(size: size, format: format)
+    }
+
     nonisolated static func cropAndScale(image: UIImage) -> CIImage? {
         let normalizedImage = image.normalizedOrientation()
         guard let original = CIImage(image: normalizedImage) else { return nil }

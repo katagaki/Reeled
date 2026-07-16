@@ -3,6 +3,8 @@ import Observation
 
 @Observable
 final class VHSFilterSettings: @unchecked Sendable {
+    var showDate: Bool = true { didSet { version += 1 } }
+    var showTime: Bool = true { didSet { version += 1 } }
     var chromaticAberration: Double = 0.0 { didSet { version += 1 } }
     var saturation: Double = 0.68 { didSet { version += 1 } }
     var brightness: Double = -0.045 { didSet { version += 1 } }
@@ -23,13 +25,15 @@ final class VHSFilterSettings: @unchecked Sendable {
     private static let storageKey = "VHSFilterSettings"
 
     func resetToDefaults() {
+        showDate = true
+        showTime = true
         chromaticAberration = 0.0
         saturation = 0.68
         brightness = -0.045
         contrast = 1.15
         warmth = 5620
         softness = 1.1
-        scanlineOpacity = 0.05
+        scanlineOpacity = 0.17
         noiseLines = 0.85
         displacement = 1.6
         grain = 0.1
@@ -41,6 +45,8 @@ final class VHSFilterSettings: @unchecked Sendable {
 
     func save() {
         let dict: [String: Double] = [
+            "showDate": showDate ? 1 : 0,
+            "showTime": showTime ? 1 : 0,
             "chromaticAberration": chromaticAberration,
             "saturation": saturation,
             "brightness": brightness,
@@ -62,6 +68,8 @@ final class VHSFilterSettings: @unchecked Sendable {
     // swiftlint:disable:next cyclomatic_complexity
     func load() {
         guard let dict = UserDefaults.standard.dictionary(forKey: Self.storageKey) as? [String: Double] else { return }
+        if let val = dict["showDate"] { showDate = val != 0 }
+        if let val = dict["showTime"] { showTime = val != 0 }
         if let val = dict["chromaticAberration"] { chromaticAberration = val }
         if let val = dict["saturation"] { saturation = val }
         if let val = dict["brightness"] { brightness = val }
@@ -80,6 +88,8 @@ final class VHSFilterSettings: @unchecked Sendable {
 
     func snapshot() -> Snapshot {
         Snapshot(
+            showDate: showDate,
+            showTime: showTime,
             chromaticAberration: chromaticAberration,
             saturation: saturation,
             brightness: brightness,
@@ -98,6 +108,8 @@ final class VHSFilterSettings: @unchecked Sendable {
     }
 
     struct Snapshot: Sendable {
+        let showDate: Bool
+        let showTime: Bool
         let chromaticAberration: Double
         let saturation: Double
         let brightness: Double

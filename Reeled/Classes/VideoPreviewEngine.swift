@@ -10,6 +10,7 @@ final class VideoPreviewEngine: @unchecked Sendable {
     private(set) var isPlaying: Bool = false
 
     private var extractor: VideoFrameExtractor?
+    private var stillImage: UIImage?
     private var settings: VHSFilterSettings.Snapshot
     private var displayLink: CADisplayLink?
     private var startTime: CFTimeInterval = 0
@@ -44,9 +45,25 @@ final class VideoPreviewEngine: @unchecked Sendable {
         }
     }
 
+    /// Still-image mode: re-filters every tick so the tape looks like it's playing.
+    func load(image: UIImage) async {
+        await MainActor.run {
+            stop()
+        }
+        stillImage = image
+        let snap = settings
+        let filtered = await Task.detached {
+            VHSFilter.apply(to: image, settings: snap)
+        }.value
+        await MainActor.run {
+            self.currentFrame = filtered
+            self.play()
+        }
+    }
+
     @MainActor
     func play() {
-        guard extractor != nil, !isPlaying else { return }
+        guard extractor != nil || stillImage != nil, !isPlaying else { return }
         isPlaying = true
         let link = CADisplayLink(target: DisplayLinkTarget(engine: self), selector: #selector(DisplayLinkTarget.tick))
         link.preferredFrameRateRange = CAFrameRateRange(minimum: 24, maximum: 30, preferred: 30)
@@ -75,12 +92,21 @@ final class VideoPreviewEngine: @unchecked Sendable {
             startTime = CACurrentMediaTime()
         }
         // Show the first frame immediately
-        guard let extractor else { return }
         let snap = settings
-        Task.detached { [weak self] in
-            guard let self else { return }
-            if let first = await extractor.frame(at: 0) {
-                let filtered = VHSFilter.apply(to: first, settings: snap)
+        if let extractor {
+            Task.detached { [weak self] in
+                guard let self else { return }
+                if let first = await extractor.frame(at: 0) {
+                    let filtered = VHSFilter.apply(to: first, settings: snap)
+                    await MainActor.run {
+                        self.currentFrame = filtered
+                    }
+                }
+            }
+        } else if let stillImage {
+            Task.detached { [weak self] in
+                guard let self else { return }
+                let filtered = VHSFilter.apply(to: stillImage, settings: snap)
                 await MainActor.run {
                     self.currentFrame = filtered
                 }
@@ -94,13 +120,30 @@ final class VideoPreviewEngine: @unchecked Sendable {
         displayLink = nil
         isPlaying = false
         extractor = nil
+        stillImage = nil
         currentFrame = nil
         pausedElapsed = 0
         isRendering = false
     }
 
     fileprivate func onDisplayLinkTick() {
-        guard let extractor, !isRendering else { return }
+        guard !isRendering else { return }
+
+        if extractor == nil, let stillImage {
+            isRendering = true
+            let snap = settings
+            Task.detached { [weak self] in
+                guard let self else { return }
+                let filtered = VHSFilter.apply(to: stillImage, settings: snap)
+                await MainActor.run {
+                    self.currentFrame = filtered
+                    self.isRendering = false
+                }
+            }
+            return
+        }
+
+        guard let extractor else { return }
 
         let elapsed = CACurrentMediaTime() - startTime
         let videoDuration = CMTimeGetSeconds(extractor.duration)

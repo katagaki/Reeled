@@ -3,25 +3,23 @@ import UIKit
 
 extension VHSFilter {
 
-    // swiftlint:disable:next function_body_length
-    nonisolated static func generateDateStamp(size: CGSize, seed: UInt64) -> CIImage? {
-        var rng = SeededRNG(seed: seed)
+    /// The year VHS was introduced by JVC.
+    nonisolated static let vhsYear = 1976
 
-        let year = Int.random(in: 1...31, using: &rng)
-        let month = Int.random(in: 1...12, using: &rng)
-        let day = Int.random(in: 1...28, using: &rng)
-        let hour = Int.random(in: 0...23, using: &rng)
-        let minute = Int.random(in: 0...59, using: &rng)
+    nonisolated static func generateDateStamp(size: CGSize, settings: VHSFilterSettings.Snapshot) -> CIImage? {
+        guard settings.showDate || settings.showTime else { return nil }
 
-        let formats = [
-            String(format: "%d.%02d.%02d  %02d:%02d", 1988 + year, month, day, hour, minute),
-            String(format: "H%d.%d.%d  %d:%02d", year, month, day, hour, minute),
-            String(format: "%d/%02d/%02d  %02d:%02d", 1988 + year, month, day, hour, minute),
-            String(format: "'%02d %02d.%02d  %02d:%02d", (1988 + year) % 100, month, day, hour, minute)
-        ]
-        let dateString = formats[Int.random(in: 0..<formats.count, using: &rng)]
+        let components = Calendar.current.dateComponents([.month, .day, .hour, .minute], from: Date())
+        var parts: [String] = []
+        if settings.showDate {
+            parts.append(String(format: "%d.%02d.%02d", vhsYear, components.month ?? 1, components.day ?? 1))
+        }
+        if settings.showTime {
+            parts.append(String(format: "%02d:%02d", components.hour ?? 0, components.minute ?? 0))
+        }
+        let dateString = parts.joined(separator: "  ")
 
-        let renderer = UIGraphicsImageRenderer(size: size)
+        let renderer = pixelRenderer(size: size)
         let image = renderer.image { ctx in
             UIColor.clear.setFill()
             ctx.fill(CGRect(origin: .zero, size: size))
@@ -54,27 +52,6 @@ extension VHSFilter {
             dateString.draw(at: CGPoint(x: xPos + 1, y: yPos + 1), withAttributes: glowAttributes)
 
             dateString.draw(at: CGPoint(x: xPos, y: yPos), withAttributes: attributes)
-
-            let playString = "PLAY  ▶"
-            let playFont = UIFont(
-                name: "VCR-JP",
-                size: fontSize * 0.9
-            ) ?? UIFont.monospacedSystemFont(ofSize: fontSize * 0.9, weight: .bold)
-            let playAttributes: [NSAttributedString.Key: Any] = [
-                .font: playFont,
-                .foregroundColor: UIColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 0.85),
-                .paragraphStyle: paragraphStyle
-            ]
-            let playGlowAttributes: [NSAttributedString.Key: Any] = [
-                .font: playFont,
-                .foregroundColor: UIColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 0.2),
-                .paragraphStyle: paragraphStyle
-            ]
-            let playX = size.width * 0.05
-            let playY = size.height * 0.06
-            playString.draw(at: CGPoint(x: playX - 1, y: playY - 1), withAttributes: playGlowAttributes)
-            playString.draw(at: CGPoint(x: playX + 1, y: playY + 1), withAttributes: playGlowAttributes)
-            playString.draw(at: CGPoint(x: playX, y: playY), withAttributes: playAttributes)
         }
         guard let cgImage = image.cgImage else { return nil }
         return CIImage(cgImage: cgImage)

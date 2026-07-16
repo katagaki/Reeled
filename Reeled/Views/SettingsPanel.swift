@@ -1,6 +1,141 @@
 import SwiftUI
 import UIKit
 
+struct VintageToggle: View {
+    @Environment(\.theme) private var theme
+
+    let label: String
+    @Binding var isOn: Bool
+
+    private let trackSize = CGSize(width: 48, height: 20)
+    private let knobSize = CGSize(width: 24, height: 26)
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Text(label)
+                .font(.custom("VCR-JP", size: 11))
+                .foregroundStyle(theme.sliderLabel)
+
+            ZStack(alignment: .leading) {
+                RoundedRectangle(cornerRadius: 5)
+                    .fill(theme.sliderTrack)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 5)
+                            .strokeBorder(
+                                LinearGradient(
+                                    colors: [
+                                        theme.sliderTrackBorderTop,
+                                        theme.sliderTrackBorderBottom
+                                    ],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                ),
+                                lineWidth: 0.5
+                            )
+                    }
+                    .frame(width: trackSize.width, height: trackSize.height)
+
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                Color(red: 1.0, green: 0.65, blue: 0.2),
+                                Color(red: 0.65, green: 0.32, blue: 0.05)
+                            ],
+                            center: .center,
+                            startRadius: 0,
+                            endRadius: 4
+                        )
+                    )
+                    .frame(width: 7, height: 7)
+                    .shadow(color: Color(red: 1.0, green: 0.6, blue: 0.2).opacity(0.6), radius: 2)
+                    .opacity(isOn ? 1 : 0)
+                    .padding(.leading, 8)
+
+                knob
+                    .offset(x: isOn ? trackSize.width - knobSize.width : 0)
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                withAnimation(.spring(response: 0.22, dampingFraction: 0.75)) {
+                    isOn.toggle()
+                }
+                UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
+            }
+        }
+    }
+
+    private var knob: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 4)
+                .fill(
+                    LinearGradient(
+                        stops: [
+                            .init(color: Color(white: 0.9), location: 0),
+                            .init(color: Color(white: 0.68), location: 0.3),
+                            .init(color: Color(white: 0.55), location: 0.5),
+                            .init(color: Color(white: 0.72), location: 0.72),
+                            .init(color: Color(white: 0.42), location: 1)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+
+            // Brushed-metal striations
+            Canvas { context, canvasSize in
+                var posY: CGFloat = 1
+                var bright = true
+                while posY < canvasSize.height {
+                    var path = Path()
+                    path.move(to: CGPoint(x: 1, y: posY))
+                    path.addLine(to: CGPoint(x: canvasSize.width - 1, y: posY))
+                    context.stroke(
+                        path,
+                        with: .color(bright ? .white.opacity(0.09) : .black.opacity(0.07)),
+                        lineWidth: 0.5
+                    )
+                    posY += 1.5
+                    bright.toggle()
+                }
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 4))
+
+            // Grip ridges
+            HStack(spacing: 3) {
+                ForEach(0..<3, id: \.self) { _ in
+                    Rectangle()
+                        .fill(Color.black.opacity(0.35))
+                        .frame(width: 1, height: 13)
+                        .overlay(alignment: .trailing) {
+                            Rectangle()
+                                .fill(Color.white.opacity(0.4))
+                                .frame(width: 0.5)
+                                .offset(x: 0.75)
+                        }
+                }
+            }
+        }
+        .frame(width: knobSize.width, height: knobSize.height)
+        .overlay {
+            RoundedRectangle(cornerRadius: 4)
+                .strokeBorder(
+                    LinearGradient(
+                        colors: [
+                            Color(white: 0.95),
+                            Color(white: 0.4),
+                            Color(white: 0.15)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    ),
+                    lineWidth: 0.75
+                )
+        }
+        .shadow(color: .black.opacity(0.45), radius: 1.5, y: 1)
+    }
+}
+
 struct VintageSlider: View {
     @Environment(\.theme) private var theme
 

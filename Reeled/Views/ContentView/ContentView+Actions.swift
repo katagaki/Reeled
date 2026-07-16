@@ -9,7 +9,6 @@ extension ContentView {
     // swiftlint:disable:next function_body_length
     func loadAndProcess(item: PhotosPickerItem) {
         isProcessing = true
-        if originalImage == nil { processedImage = nil }
 
         // Stop any existing video preview
         videoPreviewEngine?.stop()
@@ -97,12 +96,13 @@ extension ContentView {
                     originalImage = uiImage
                 }
 
-                let result = VHSFilter.apply(to: uiImage, settings: snap)
-
-                await MainActor.run {
-                    processedImage = result
+                let engine = await MainActor.run { () -> VideoPreviewEngine in
+                    let engine = VideoPreviewEngine(settings: snap)
+                    videoPreviewEngine = engine
                     isProcessing = false
+                    return engine
                 }
+                await engine.load(image: uiImage)
             }
         }
     }
@@ -142,21 +142,6 @@ extension ContentView {
         var errorDescription: String? {
             switch self {
             case .failedToLoadVideo: "Failed to load video."
-            }
-        }
-    }
-
-    func reprocess() {
-        guard let originalImage, !isProcessing else { return }
-        isProcessing = true
-        let snap = settings.snapshot()
-        printSettings(snap)
-
-        Task.detached {
-            let result = VHSFilter.apply(to: originalImage, settings: snap)
-            await MainActor.run {
-                processedImage = result
-                isProcessing = false
             }
         }
     }
@@ -271,7 +256,7 @@ extension ContentView {
     }
 
     func savePhoto() {
-        guard let imageToSave = processedImage ?? videoPreviewEngine?.currentFrame else { return }
+        guard let imageToSave = videoPreviewEngine?.currentFrame else { return }
         let saver = ImageSaver {
             showDoneIndicator()
         } onError: { error in

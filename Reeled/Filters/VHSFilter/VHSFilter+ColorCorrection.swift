@@ -18,13 +18,34 @@ extension VHSFilter {
             "inputNeutral": CIVector(x: 5800, y: 0),
             "inputTargetNeutral": CIVector(x: settings.warmth, y: 25)
         ])
-        let chromaBleedRadius = max(1.5, 3.0 * scale)
-        let blurredForChroma = result.applyingFilter("CIMotionBlur", parameters: [
-            kCIInputRadiusKey: chromaBleedRadius,
+
+        // Analog levels: lifted blacks, soft-clipped whites
+        result = result.applyingFilter("CIToneCurve", parameters: [
+            "inputPoint0": CIVector(x: 0.0, y: 0.025),
+            "inputPoint1": CIVector(x: 0.25, y: 0.26),
+            "inputPoint2": CIVector(x: 0.5, y: 0.5),
+            "inputPoint3": CIVector(x: 0.75, y: 0.75),
+            "inputPoint4": CIVector(x: 1.0, y: 0.965)
+        ])
+
+        // Chroma bleed: blur and delay the colour, keep the luma sharp
+        let chromaBlurRadius = max(6.0, 12.0 * scale)
+        var chroma = result.applyingFilter("CIMotionBlur", parameters: [
+            kCIInputRadiusKey: chromaBlurRadius,
             kCIInputAngleKey: 0.0
         ]).cropped(to: extent)
-        return result.applyingFilter("CIColorBlendMode", parameters: [
-            kCIInputBackgroundImageKey: blurredForChroma
+        chroma = chroma.applyingFilter("CIMotionBlur", parameters: [
+            kCIInputRadiusKey: max(1.0, 1.5 * scale),
+            kCIInputAngleKey: Float.pi / 2.0
+        ]).cropped(to: extent)
+        chroma = chroma
+            .transformed(by: CGAffineTransform(translationX: max(1.0, 2.0 * scale), y: 0))
+            .clampedToExtent()
+            .cropped(to: extent)
+
+        // CIColorBlendMode: background luminance + source hue/saturation
+        return chroma.applyingFilter("CIColorBlendMode", parameters: [
+            kCIInputBackgroundImageKey: result
         ]).cropped(to: extent)
     }
 
@@ -61,11 +82,12 @@ extension VHSFilter {
             by: CGAffineTransform(translationX: CGFloat(-amount) * min(scale, 1.5) * 0.3, y: 0)
         )
 
+        // Maximum compositing reassembles the planes without stacking alpha
         return redShifted
-            .applyingFilter("CIAdditionCompositing", parameters: [
+            .applyingFilter("CIMaximumCompositing", parameters: [
                 kCIInputBackgroundImageKey: greenOnly
             ])
-            .applyingFilter("CIAdditionCompositing", parameters: [
+            .applyingFilter("CIMaximumCompositing", parameters: [
                 kCIInputBackgroundImageKey: blueShifted
             ])
             .cropped(to: extent)

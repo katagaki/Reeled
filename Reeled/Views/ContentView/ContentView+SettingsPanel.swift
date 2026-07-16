@@ -18,6 +18,22 @@ extension ContentView {
         return VStack(spacing: 16) {
             Spacer().frame(height: 0)
 
+            settingsGroup("TIMESTAMP") {
+                HStack(spacing: 16) {
+                    VintageToggle(
+                        label: "DATE",
+                        isOn: $settings.showDate
+                    )
+                    .frame(maxWidth: .infinity)
+
+                    VintageToggle(
+                        label: "TIME",
+                        isOn: $settings.showTime
+                    )
+                    .frame(maxWidth: .infinity)
+                }
+            }
+
             settingsGroup("COLOR") {
                 VintageSlider(
                     label: "SATURATION",

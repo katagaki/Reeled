@@ -10,12 +10,10 @@ struct ContentView: View {
     @Environment(\.theme) var theme
     @State var selectedItem: PhotosPickerItem?
     @State var originalImage: UIImage?
-    @State var processedImage: UIImage?
     @State var isProcessing = false
     @State var showingSaveError = false
     @State var saveErrorMessage = ""
     @State var settings = VHSFilterSettings()
-    @State var debounceTask: Task<Void, Never>?
     @State var originalFilename: String?
     @State var isExporting = false
     @State var exportProgress: Double = 0
@@ -75,15 +73,13 @@ struct ContentView: View {
                     let imageHeight = geo.size.height * 0.5
                     let slidersHeight = geo.size.height * 0.5
 
-                    if processedImage == nil && videoPreviewEngine == nil && !isProcessing && !isExporting {
+                    if videoPreviewEngine == nil && !isProcessing && !isExporting {
                         EmptyStateView()
                     } else {
                         VStack(spacing: 0) {
                             Group {
                                 if let videoPreviewEngine {
                                     FilteredVideoPreviewView(engine: videoPreviewEngine)
-                                } else if let processedImage {
-                                    ProcessedImageView(image: processedImage)
                                 } else {
                                     Spacer()
                                 }
@@ -100,7 +96,7 @@ struct ContentView: View {
                                 .frame(height: slidersHeight)
                             } else {
                                 ScrollView {
-                                    if processedImage != nil || videoPreviewEngine != nil || isProcessing {
+                                    if videoPreviewEngine != nil || isProcessing {
                                         inlineSettingsPanel
                                     }
                                 }
@@ -123,16 +119,7 @@ struct ContentView: View {
         .onChange(of: settings.version) { _, _ in
             guard originalImage != nil else { return }
             settings.save()
-            if videoPreviewEngine != nil {
-                videoPreviewEngine?.updateSettings(settings.snapshot())
-            } else {
-                debounceTask?.cancel()
-                debounceTask = Task {
-                    try? await Task.sleep(for: .milliseconds(300))
-                    guard !Task.isCancelled else { return }
-                    reprocess()
-                }
-            }
+            videoPreviewEngine?.updateSettings(settings.snapshot())
         }
         .alert(String(localized: "Alert.Error.Title"), isPresented: $showingSaveError) {
             Button("OK") {}
